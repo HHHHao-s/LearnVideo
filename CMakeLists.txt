@@ -14,6 +14,8 @@ project ("MyProject")
 set(COMPILE_FLAGS
 	-Wall
 )
+
+
 set(
 	CXX_STANDARD 17
 )
@@ -28,6 +30,9 @@ set(LINK_DIR
 	E:/ffmpeg/lib
 )
 
+
+
+
 include_directories(${INCLUDE_DIR})
 link_directories(${LINK_DIR})
 
@@ -36,9 +41,14 @@ add_executable (ffmpegTester "ffmpegTester.cpp")
 
 add_executable (SDL_01 "sdl-01.cpp")
 
-
 set(EXECUTABLES ffmpegTester SDL_01)
 set(FFMPEG_LIBS avcodec avformat swscale avdevice avutil)
-target_link_libraries(ffmpegTester SDL2 ${FFMPEG_LIBS})
-target_link_libraries(SDL_01 SDL2 ${FFMPEG_LIBS})
+
+foreach(EXECUTABLE ${EXECUTABLES})
+	target_link_libraries(${EXECUTABLE} SDL2 ${FFMPEG_LIBS})
+endforeach()
+set_target_properties(${EXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# set_property(GLOBAL PROPERTY WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# set_property(GLOBAL PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 # TODO: 如有需要，请添加测试并安装目标。

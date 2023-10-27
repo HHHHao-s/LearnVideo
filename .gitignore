@@ -1,2 +1,7 @@
 *.mp4
 out
+*.h264
+*.ts
+*.exe
+*.ilk
+*.pdb
