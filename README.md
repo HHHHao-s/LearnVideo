@@ -71,6 +71,21 @@ void av_bsf_free(AVBSFContext **ctx);
 ```
 在test3
 
+### AAC提取PCM
+
+[AAC提取PCM](https://blog.csdn.net/m0_37599645/article/details/112286537)
+
+在[parse_pcm.cpp](src/parse_pcm.cpp)中
+
+播放：`ffplay -ar 48000 -ac 2 -f f32le test.pcm`
+
+### H264提取YUV420P
+
+[H264提取YUV420P](https://blog.csdn.net/asdasfdgdhh/article/details/109777820)
+
+在[parse_yuv420p.cpp](src/parse_yuv.cpp)中
+
+播放: `ffplay -pixel_format yuv420p -video_size 1280x720  -i test.yuv`
 
 ## 二、 SDL
 
@@ -85,3 +100,8 @@ void av_bsf_free(AVBSFContext **ctx);
 ![flv](image/README/flv.webp)
 
 [FlvParser](https://blog.csdn.net/weixin_41643938/article/details/124537035)
+
+
+### MP4
+
+[mp4](https://zhuanlan.zhihu.com/p/355803589)

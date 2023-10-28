@@ -32,23 +32,26 @@ set(LINK_DIR
 
 
 
-
 include_directories(${INCLUDE_DIR})
 link_directories(${LINK_DIR})
 
 # 将源代码添加到此项目的可执行文件。
-add_executable (ffmpegTester "ffmpegTester.cpp")
+add_executable (ffmpegTester "src/ffmpegTester.cpp")
+add_executable (SDL_01 "src/sdl-01.cpp")
+add_executable (parse_pcm "src/parse_pcm.cpp")
+add_executable (parse_yuv420p "src/parse_yuv420p.cpp")
 
-add_executable (SDL_01 "sdl-01.cpp")
+# 设置所有的执行程序
+set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p)
 
-set(EXECUTABLES ffmpegTester SDL_01)
-set(FFMPEG_LIBS avcodec avformat swscale avdevice avutil)
-
+# 设置需要链接的库
+set(LIBS SDL2 avcodec avformat swscale avdevice avutil)
+# link libs
 foreach(EXECUTABLE ${EXECUTABLES})
-	target_link_libraries(${EXECUTABLE} SDL2 ${FFMPEG_LIBS})
+	target_link_libraries(${EXECUTABLE} ${LIBS})
 endforeach()
-set_target_properties(${EXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-# set_property(GLOBAL PROPERTY WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-# set_property(GLOBAL PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
-# TODO: 如有需要，请添加测试并安装目标。
+# set working directory
+set_target_properties(${EXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
+
+

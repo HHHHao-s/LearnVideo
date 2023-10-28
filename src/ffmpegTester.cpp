@@ -1,12 +1,14 @@
 #include <iostream>
 #include <stdio.h>
 #include <fcntl.h>  
+
 // #include <direct.h>
 // 这里一定要用extern "C"
 extern "C"{
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavcodec/bsf.h"
+#include <SDL.h>
 }
 
 void test1(){
@@ -197,6 +199,8 @@ void test3(const char* file_name,const char* out_file_name){
     
 }
 
+
+#undef main
 int main(int argc, char *argv[]){
     const char* file_name = "video.mp4";
     // test1();
@@ -206,6 +210,6 @@ int main(int argc, char *argv[]){
         test3("video.mp4", "out.h264");
     }
     
-    
+    return 0;
     
 }
