@@ -88,23 +88,8 @@ static void decode(AVCodecContext* dec_ctx, AVPacket* pkt, AVFrame* frame, FILE 
 
 }
 
+static int parse_aac_to_pcm(const char* input_filename, const char* output_filename){
 
-int main(int argc, char *argv[])
-{
-    
-    char* filename = NULL;
-    char* outfilename = NULL;
-    if(argc != 3)
-    {
-        printf("Usage: %s <input file> <output file>\n", argv[0]);
-
-        filename = "test.mp3";
-        outfilename = "test.pcm";
-    }else{
-        filename = argv[1];
-        outfilename = argv[2];
-    }
-    
     const AVCodec *codec;
     AVCodecContext *codec_ctx= NULL;
     AVCodecParserContext *parser = NULL;
@@ -123,11 +108,11 @@ int main(int argc, char *argv[])
     pkt = av_packet_alloc();
     //要使用的解码器ID
     enum AVCodecID audio_codec_id = AV_CODEC_ID_AAC;
-    if(strstr(filename, "aac") != NULL)
+    if(strstr(input_filename, "aac") != NULL)
     {
         audio_codec_id = AV_CODEC_ID_AAC;
     }
-    else if(strstr(filename, ".mp3") != NULL)
+    else if(strstr(input_filename, ".mp3") != NULL)
     {
         audio_codec_id = AV_CODEC_ID_MP3;
     }
@@ -169,7 +154,7 @@ int main(int argc, char *argv[])
     }
 
     //打开输入文件
-    infile = fopen(filename, "rb");
+    infile = fopen(input_filename, "rb");
     if(!infile)
     {
         printf("infile fopen failed!\n");
@@ -177,7 +162,7 @@ int main(int argc, char *argv[])
     }
 
     //输出文件
-    outfile = fopen(outfilename, "wb");
+    outfile = fopen(output_filename, "wb");
     if(!outfile)
     {
         printf("outfilie fopen failed!\n");
@@ -246,6 +231,27 @@ int main(int argc, char *argv[])
     av_packet_free(&pkt);
 
     printf("audio decoder end!\n");
+
+}
+
+int main(int argc, char *argv[])
+{
+    
+    char* filename = NULL;
+    char* outfilename = NULL;
+    if(argc != 3)
+    {
+        printf("Usage: %s <input file> <output file>\n", argv[0]);
+
+        filename = "test.mp3";
+        outfilename = "test.pcm";
+    }else{
+        filename = argv[1];
+        outfilename = argv[2];
+    }
+    
+    parse_aac_to_pcm(filename, outfilename);
+    
     return 0;
 }
 

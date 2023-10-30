@@ -35,7 +35,7 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
         fwrite(frame->data[2], 1, y_size/4, fo);
     }
 }
-static int test(const char* filename,const char* outfilename)
+static int parse_h264_to_yuv(const char* filename,const char* outfilename)
 {
     const AVCodec *codec;
     AVCodecParserContext *parser;
@@ -122,6 +122,6 @@ static int test(const char* filename,const char* outfilename)
 }
 void main()
 {
-    test("test.h264","test.yuv");
+    parse_h264_to_yuv("test.h264","test.yuv");
     
 }
