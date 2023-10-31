@@ -6,3 +6,4 @@ out
 *.ilk
 *.pdb
 res
+.vs

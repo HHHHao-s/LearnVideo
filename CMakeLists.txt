@@ -36,14 +36,15 @@ include_directories(${INCLUDE_DIR})
 link_directories(${LINK_DIR})
 
 # 将源代码添加到此项目的可执行文件。
+
 add_executable (ffmpegTester "src/ffmpegTester.cpp")
 add_executable (SDL_01 "src/sdl-01.cpp")
 add_executable (parse_pcm "src/parse_pcm.cpp")
 add_executable (parse_yuv420p "src/parse_yuv420p.cpp")
 add_executable (07-08-demuxer-mp4 "src/07-08-demuxer-mp4.c")
+add_executable (07-09-avio "src/07-09-avio.c")
 # 设置所有的执行程序
-set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p 07-08-demuxer-mp4)
-
+set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p 07-08-demuxer-mp4 07-09-avio)
 # 设置需要链接的库
 set(LIBS SDL2 avcodec avformat swscale avdevice avutil)
 # link libs

@@ -13,6 +13,10 @@
 
 ## 一、 FFmpeg
 
+### FFmpeg examples
+
+[FFmpeg examples](https://ffmpeg.org/doxygen/trunk/examples.html)
+
 ### ffmpeg九宫格
 
 ```powershell
@@ -88,6 +92,50 @@ void av_bsf_free(AVBSFContext **ctx);
 在[parse_yuv420p.cpp](src/parse_yuv.cpp)中
 
 播放: `ffplay -pixel_format yuv420p -video_size 1280x720  -i test.yuv`
+
+### 使用AVIO
+
+[AVIO](https://zhuanlan.zhihu.com/p/501294281)
+
+在[07-09-avio.cpp](src/07-09-avio.cpp)中
+
+```c
+AVIOContext *avio_alloc_context(
+                  unsigned char *buffer,
+                  int buffer_size,
+                  int write_flag,
+                  void *opaque,
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int64_t (*seek)(void *opaque, int64_t offset, int whence));
+
+
+//创建AVIOContext
+AVIOContext *avio_ctx = avio_alloc_context(inbuf, AUDIO_INBUF_SIZE, 0, (void *)in_file, (void *)&read_file, NULL, NULL);
+
+
+AVFormatContext *fmt_ctx = avformat_alloc_context();
+fmt_ctx->pb = avio_ctx;
+// 不需要手动设置，avformat_open_input会自动设置
+// fmt_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
+
+// 调用av_read_frame和avformat_open_input时，会自动调用avio_ctx->read_packet
+// 可以在read_packet函数中从内存读取数据
+ret = av_read_frame(fmt_ctx, pkt);
+
+// 必须这样释放，否则会内存泄漏
+// 自定义avio不会把里面的pb释放掉
+// fmt_ctx会free掉
+avformat_close_input(&fmt_ctx);
+
+/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
+if (avio_ctx)
+    av_freep(&avio_ctx->buffer);
+avio_context_free(&avio_ctx);
+
+```
 
 
 ## 二、 SDL
