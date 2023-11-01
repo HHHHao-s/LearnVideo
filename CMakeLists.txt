@@ -21,13 +21,13 @@ set(
 )
 
 set(INCLUDE_DIR
-	E:/SDL2/include
-	E:/ffmpeg/include
+	${CMAKE_SOURCE_DIR}/env/SDL2/include
+	${CMAKE_SOURCE_DIR}/env/ffmpeg/include
 )
 
 set(LINK_DIR
-	E:/SDL2/lib/x64
-	E:/ffmpeg/lib
+	${CMAKE_SOURCE_DIR}/env/SDL2/lib/x64
+	${CMAKE_SOURCE_DIR}/env/ffmpeg/lib
 )
 
 
@@ -43,10 +43,11 @@ add_executable (parse_pcm "src/parse_pcm.cpp")
 add_executable (parse_yuv420p "src/parse_yuv420p.cpp")
 add_executable (07-08-demuxer-mp4 "src/07-08-demuxer-mp4.c")
 add_executable (07-09-avio "src/07-09-avio.c")
+add_executable (resample_audio "src/resample_audio.c")
 # 设置所有的执行程序
-set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p 07-08-demuxer-mp4 07-09-avio)
+set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p 07-08-demuxer-mp4 07-09-avio resample_audio)
 # 设置需要链接的库
-set(LIBS SDL2 avcodec avformat swscale avdevice avutil)
+set(LIBS SDL2 avcodec avformat swscale avdevice avutil avfilter swresample postproc)
 # link libs
 foreach(EXECUTABLE ${EXECUTABLES})
 	target_link_libraries(${EXECUTABLE} ${LIBS})

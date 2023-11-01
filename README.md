@@ -119,10 +119,11 @@ fmt_ctx->pb = avio_ctx;
 // 不需要手动设置，avformat_open_input会自动设置
 // fmt_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
 
-ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
+
 
 // 调用av_read_frame和avformat_open_input时，会自动调用avio_ctx->read_packet
 // 可以在read_packet函数中从内存读取数据
+ret = avformat_open_input(&fmt_ctx, NULL, NULL, NULL);
 ret = av_read_frame(fmt_ctx, pkt);
 
 // 必须这样释放，否则会内存泄漏
@@ -137,6 +138,75 @@ avio_context_free(&avio_ctx);
 
 ```
 
+### 音频重采样
+
+[resample_audio.c](src/resample_audio.c)
+
+```c
+/**
+ * Gets the delay the next input sample will experience relative to the next output sample.
+ *
+ * Swresample can buffer data if more input has been provided than available
+ * output space, also converting between sample rates needs a delay.
+ * This function returns the sum of all such delays.
+ * The exact delay is not necessarily an integer value in either input or
+ * output sample rate. Especially when downsampling by a large value, the
+ * output sample rate may be a poor choice to represent the delay, similarly
+ * for upsampling and the input sample rate.
+ *
+ * @param s     swr context
+ * @param base  timebase in which the returned delay will be:
+ *              @li if it's set to 1 the returned delay is in seconds
+ *              @li if it's set to 1000 the returned delay is in milliseconds
+ *              @li if it's set to the input sample rate then the returned
+ *                  delay is in input samples
+ *              @li if it's set to the output sample rate then the returned
+ *                  delay is in output samples
+ *              @li if it's the least common multiple of in_sample_rate and
+ *                  out_sample_rate then an exact rounding-free delay will be
+ *                  returned
+ * @returns     the delay in 1 / @c base units.
+ */
+int64_t swr_get_delay(struct SwrContext *s, int64_t base);
+
+/**
+ * @}
+ *
+ * @name Core conversion functions
+ * @{
+ */
+
+/** Convert audio.
+ *
+ * in and in_count can be set to 0 to flush the last few samples out at the
+ * end.
+ *
+ * If more input is provided than output space, then the input will be buffered.
+ * You can avoid this buffering by using swr_get_out_samples() to retrieve an
+ * upper bound on the required number of output samples for the given number of
+ * input samples. Conversion will run directly without copying whenever possible.
+ *
+ * @param s         allocated Swr context, with parameters set
+ * @param out       output buffers, only the first one need be set in case of packed audio
+ * @param out_count amount of space available for output in samples per channel
+ * @param in        input buffers, only the first one need to be set in case of packed audio
+ * @param in_count  number of input samples available in one channel
+ *
+ * @return number of samples output per channel, negative value on error
+ */
+int swr_convert(struct SwrContext *s, uint8_t **dst_data, int dst_nb_samples,
+                                const uint8_t **src_data , int src_nb_samples);
+
+// 每次调用swr_convert时，都会返回一个size，这个size<=dst_nb_samples，于是，需要调用swr_get_delay加到src_nb_samples上以获取更多的dst_nb_samples
+// 这样下次一调用swr_convert时，dst_nb_samples就会增加
+int64_t delay = swr_get_delay(swr_ctx, src_rate);
+        dst_nb_samples = av_rescale_rnd( delay+
+                                        src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
+ret = swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, src_nb_samples);
+
+swr_convert(swr_ctx, dst_data, dst_nb_samples, NULL, 0);可以flush剩余的数据
+
+```
 
 ## 二、 SDL
 
