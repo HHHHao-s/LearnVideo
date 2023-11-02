@@ -208,6 +208,28 @@ swr_convert(swr_ctx, dst_data, dst_nb_samples, NULL, 0);可以flush剩余的数�
 
 ```
 
+
+
+### 编码PCM
+
+[encode_pcm_aac.c](src/encode_pcm_aac.c)
+
+```c
+// 这项要和源文件的采样率一致，不然编码后的aac文件会出现变速的情况
+c->sample_rate =select_sample_rate(codec);
+//例如使用 ffmpeg -i video.mp4 -vn -ar 44100 -ac 2 -f f32le test.pcm 编码时，需要设置 c->sample_rate = 44100;
+
+// 此函数会正确的设置frame->data指向in_tmp_buf中对应的位置
+av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layout.nb_channels, frame->nb_samples, frame->format, 0);
+
+// 使用ffplay test.aac就可以播放了，不需要指定参数
+
+```
+
+
+
+
+
 ## 二、 SDL
 
 直接下载[SDL2](https://github.com/libsdl-org/SDL/releases)，然后用cmake引入就可以使用

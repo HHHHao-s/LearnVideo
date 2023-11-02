@@ -36,24 +36,24 @@ include_directories(${INCLUDE_DIR})
 link_directories(${LINK_DIR})
 
 # 将源代码添加到此项目的可执行文件。
-
-add_executable (ffmpegTester "src/ffmpegTester.cpp")
-add_executable (SDL_01 "src/sdl-01.cpp")
-add_executable (parse_pcm "src/parse_pcm.cpp")
-add_executable (parse_yuv420p "src/parse_yuv420p.cpp")
-add_executable (07-08-demuxer-mp4 "src/07-08-demuxer-mp4.c")
-add_executable (07-09-avio "src/07-09-avio.c")
-add_executable (resample_audio "src/resample_audio.c")
 # 设置所有的执行程序
-set(EXECUTABLES ffmpegTester SDL_01 parse_pcm parse_yuv420p 07-08-demuxer-mp4 07-09-avio resample_audio)
+set(CEXECUTABLES encode_pcm_aac 07-08-demuxer-mp4 07-09-avio resample_audio)
+set(CPPEXECUTABLES ffmpegTester sdl-01 parse_pcm parse_yuv420p)
 # 设置需要链接的库
 set(LIBS SDL2 avcodec avformat swscale avdevice avutil avfilter swresample postproc)
 # link libs
-foreach(EXECUTABLE ${EXECUTABLES})
+foreach(EXECUTABLE ${CEXECUTABLES})
+	add_executable(${EXECUTABLE} src/${EXECUTABLE}.c)
+	target_link_libraries(${EXECUTABLE} ${LIBS})
+endforeach()
+
+foreach(EXECUTABLE ${CPPEXECUTABLES})
+	add_executable(${EXECUTABLE} src/${EXECUTABLE}.cpp)
 	target_link_libraries(${EXECUTABLE} ${LIBS})
 endforeach()
 
 # set working directory
-set_target_properties(${EXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
+set_target_properties(${CPPEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
+set_target_properties(${CEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
 
 
