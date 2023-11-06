@@ -227,6 +227,16 @@ av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layou
 ```
 
 
+### 编码yuv420p
+
+提取yuv:
+`ffmpeg -i video.mp4 -c:v rawvideo -pix_fmt yuv420p test_yuv420p_1280x720.yuv`
+
+播放yuv:
+`ffplay -f rawvideo -pixel_format yuv420p -video_size 1280x720 .\test_yuv420p_1280x720.yuv`
+
+[encode_video](src/encode_video.cpp)
+
 
 
 
