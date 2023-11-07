@@ -37,7 +37,7 @@ link_directories(${LINK_DIR})
 
 # 将源代码添加到此项目的可执行文件。
 # 设置所有的执行程序
-set(CEXECUTABLES encode-video encode_pcm_aac 07-08-demuxer-mp4 07-09-avio resample_audio)
+set(CEXECUTABLES mux encode-video encode_pcm_aac 07-08-demuxer-mp4 07-09-avio resample_audio)
 set(CPPEXECUTABLES ffmpegTester sdl-01 parse_pcm parse_yuv420p)
 # 设置需要链接的库
 set(LIBS SDL2 avcodec avformat swscale avdevice avutil avfilter swresample postproc)

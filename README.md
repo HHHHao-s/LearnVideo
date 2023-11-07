@@ -235,10 +235,14 @@ av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layou
 播放yuv:
 `ffplay -f rawvideo -pixel_format yuv420p -video_size 1280x720 .\test_yuv420p_1280x720.yuv`
 
-[encode_video](src/encode_video.cpp)
+[encode_video](src/encode_video.c)
 
 
+### 合成音频和视频
 
+[mux](src/mux.c)
+
+无法修改视频和音频的编码格式，要找出原因
 
 ## 二、 SDL
 
