@@ -56,4 +56,7 @@ endforeach()
 set_target_properties(${CPPEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
 set_target_properties(${CEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
 
-
+# mp4Muxer project
+add_executable(mp4Muxer src/mp4Muxer/src/main.cpp src/mp4Muxer/src/muxer.cpp src/mp4Muxer/include/muxer.h src/mp4Muxer/include/audioEncoder.h src/mp4Muxer/src/audioEncoder.cpp)
+target_link_libraries(mp4Muxer ${LIBS})
+target_include_directories(mp4Muxer PRIVATE src/mp4Muxer/include)

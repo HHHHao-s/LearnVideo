@@ -238,11 +238,15 @@ av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layou
 [encode_video](src/encode_video.c)
 
 
-### 合成音频和视频
+### 合成音频和视频到flv
 
 [mux](src/mux.c)
 
 无法修改视频和音频的编码格式，要找出原因
+
+### 合成MP4
+
+[mux_mp4](src/mux_mp4.cpp)
 
 ## 二、 SDL
 
