@@ -1,9 +1,10 @@
-*.mp4
-out
+out/
 *.h264
 *.ts
 *.exe
 *.ilk
 *.pdb
-res
+res/*
+!res/sync-h264.mp4
 .vs
+
