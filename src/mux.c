@@ -40,6 +40,7 @@
 #include <libavutil/timestamp.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+// #include <libavformat/mux.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 #include "libavutil/intreadwrite.h"
@@ -55,29 +56,6 @@
 
 #define SCALE_FLAGS SWS_BICUBIC
 
-AVOutputFormat* ff_flv_format=NULL;
-
-// const FFOutputFormat ff_flv_muxer = {
-//     .p.name         = "flv",
-//     .p.long_name    = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
-//     .p.mime_type    = "video/x-flv",
-//     .p.extensions   = "flv",
-//     .priv_data_size = sizeof(FLVContext),
-//     .p.audio_codec  = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_ADPCM_SWF,
-//     .p.video_codec  = AV_CODEC_ID_FLV1,
-//     .init           = flv_init,
-//     .write_header   = flv_write_header,
-//     .write_packet   = flv_write_packet,
-//     .write_trailer  = flv_write_trailer,
-//     .deinit         = flv_deinit,
-//     .check_bitstream= flv_check_bitstream,
-//     .p.codec_tag    = (const AVCodecTag* const []) {
-//                           flv_video_codec_ids, flv_audio_codec_ids, 0
-//                       },
-//     .p.flags        = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
-//                       AVFMT_TS_NONSTRICT,
-//     .p.priv_class   = &flv_muxer_class,
-// };
 
 // a wrapper around a single output AVStream
 typedef struct OutputStream {
@@ -576,6 +554,7 @@ int main(int argc, char **argv)
     int have_video = 0, have_audio = 0;
     int encode_video = 0, encode_audio = 0;
     AVDictionary *opt = NULL;
+    
     int i;
 
     if (argc < 2) {
@@ -586,7 +565,7 @@ int main(int argc, char **argv)
                "The output format is automatically guessed according to the file extension.\n"
                "Raw images can also be output by using '%%d' in the filename.\n"
                "\n", argv[0]);
-        filename = "test_mux.mp4";
+        filename = "test_mux.flv";
     }else{
         filename = argv[1];
     }
@@ -596,14 +575,51 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "-flags") || !strcmp(argv[i], "-fflags"))
             av_dict_set(&opt, argv[i]+1, argv[i+1], 0);
     }
-    ff_flv_format = av_guess_format(NULL, filename, NULL);
-    
-    // ff_flv_format->audio_codec = AV_CODEC_ID_AAC;
-    // ff_flv_format->video_codec = AV_CODEC_ID_H264;
+
+    // 直接赋值是不可以的，要转成完整的FFOutputFormat再进行修改
+
+    typedef struct FFOutputFormat {
+        AVOutputFormat p;
+        int priv_data_size;
+        int flags_internal;
+        int (*write_header)(AVFormatContext *);
+        int (*write_packet)(AVFormatContext *, AVPacket *pkt);
+        int (*write_trailer)(AVFormatContext *);
+        int (*interleave_packet)(AVFormatContext *s, AVPacket *pkt,
+                                int flush, int has_packet);
+        int (*query_codec)(enum AVCodecID id, int std_compliance);
+        void (*get_output_timestamp)(AVFormatContext *s, int stream,
+                                    int64_t *dts, int64_t *wall);
+        int (*control_message)(AVFormatContext *s, int type,
+                            void *data, size_t data_size);
+        int (*write_uncoded_frame)(AVFormatContext *, int stream_index,
+                                struct AVFrame **frame, unsigned flags);
+        int (*get_device_list)(AVFormatContext *s, struct AVDeviceInfoList *device_list);
+        int (*init)(AVFormatContext *);
+        void (*deinit)(AVFormatContext *);
+        int (*check_bitstream)(AVFormatContext *s, AVStream *st,
+                            const AVPacket *pkt);
+    } FFOutputFormat;
+    // The filename is xxx.flv
+    // The default codec for flv is AV_CODEC_ID_ADPCM_SWF and AV_CODEC_ID_FLV1
+    // If I want to modify the codec I need to copy the return value of av_guess_format like this, since it returns a const pointer
+    // Because I can't include the mux.h so I need to copy the definition of FFOutputFormat
+    FFOutputFormat ff_flv_format;
+    ff_flv_format = *(FFOutputFormat*)av_guess_format(NULL, filename, NULL);
+    ff_flv_format.p.audio_codec = AV_CODEC_ID_AAC;
+    ff_flv_format.p.video_codec = AV_CODEC_ID_H264;
+
+    // If I modify the codec like this, it will cause a segmentation fault in write_header, cause it didn't copy the private fileds
+    AVOutputFormat av_flv_format;
+    av_flv_format = *(AVOutputFormat*)av_guess_format(NULL, filename, NULL);
+    av_flv_format.audio_codec = AV_CODEC_ID_AAC;
+    av_flv_format.video_codec = AV_CODEC_ID_H264;
+    // what should I do if I want to modify the codec?
+    avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
 
 
     // /* allocate the output media context */
-    avformat_alloc_output_context2(&oc,ff_flv_format, NULL, filename);
+    avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
     // avformat_alloc_output_context2(&oc, NULL, NULL, filename);
     if (!oc) {
         printf("Could not deduce output format from file extension: using MPEG.\n");

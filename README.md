@@ -242,7 +242,29 @@ av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layou
 
 [mux](src/mux.c)
 
-无法修改视频和音频的编码格式，要找出原因
+I find a problem in the example file mux.c, I need some help about modifing the codec of a muxer
+
+```c
+// The filename is xxx.flv
+// The default codec for flv is AV_CODEC_ID_ADPCM_SWF and AV_CODEC_ID_FLV1
+// If I want to modify the codec I need to copy the entire value of return pointer of av_guess_format() like this, since it returns a const pointer
+// If I modify the codec like this, it will cause a segmentation fault when I call avformat_write_header(), because it didn't copy the write_header function pointer in private fileds
+AVOutputFormat av_flv_format;
+av_flv_format = *(AVOutputFormat*)av_guess_format(NULL, filename, NULL);
+av_flv_format.audio_codec = AV_CODEC_ID_AAC;
+av_flv_format.video_codec = AV_CODEC_ID_H264;
+
+// Then I try to copy the whole FFOutputFormat to modify the codec
+// Because I can't include the mux.h file so I need to copy the definition of FFOutputFormat
+FFOutputFormat ff_flv_format;
+ff_flv_format = *(FFOutputFormat*)av_guess_format(NULL, filename, NULL);
+ff_flv_format.p.audio_codec = AV_CODEC_ID_AAC;
+ff_flv_format.p.video_codec = AV_CODEC_ID_H264;
+// At this time, it works
+avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
+// what should I do if I want to modify the codec?
+```
+
 
 ### 合成MP4
 
