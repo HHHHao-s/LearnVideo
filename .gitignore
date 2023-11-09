@@ -7,4 +7,5 @@ out/
 res/*
 !res/sync-h264.mp4
 .vs
-env/linux_shared/
+env/linux_shared
+*.gz
