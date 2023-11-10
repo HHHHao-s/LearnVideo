@@ -74,8 +74,10 @@ set_target_properties(${CPPEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOU
 set_target_properties(${CEXECUTABLES} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
 
 # mp4Muxer project
-add_executable(mp4Muxer src/mp4Muxer/include/videoEncoder.h src/mp4Muxer/src/videoEncoder.cpp src/mp4Muxer/src/main.cpp src/mp4Muxer/src/muxer.cpp src/mp4Muxer/include/muxer.h src/mp4Muxer/include/audioEncoder.h src/mp4Muxer/src/audioEncoder.cpp)
+add_executable(mp4Muxer src/mp4Muxer/include/resampler.h src/mp4Muxer/include/videoEncoder.h src/mp4Muxer/src/videoEncoder.cpp src/mp4Muxer/src/main.cpp src/mp4Muxer/src/muxer.cpp src/mp4Muxer/include/muxer.h src/mp4Muxer/include/audioEncoder.h src/mp4Muxer/src/audioEncoder.cpp)
 target_link_libraries(mp4Muxer ${LIBS})
+target_link_directories(mp4Muxer PRIVATE ${LINK_DIR})
 target_include_directories(mp4Muxer PRIVATE src/mp4Muxer/include)
+set_target_properties(mp4Muxer PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/res RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/res)
 
 # debug前要export LD_LIBRARY_PATH=${LIBS}:$LD_LIBRARY_PATH

@@ -13,7 +13,7 @@ int Muxer::Init(const char* url)
 {
     url_ = url;
     int ret = avformat_alloc_output_context2(&fmt_ctx_, nullptr, nullptr, url);
-    if(ret!=0){
+    if(ret<0){
         char errStr[64] = { 0 };
         av_strerror(ret, errStr, 64);
         printf("avformat_alloc_output_context2 failed:%s\n", errStr);
@@ -71,17 +71,20 @@ int Muxer::WriteHeader(){
         printf("fmt_ctx_ is nullptr\n");
         return -1;
     }
-
-    int ret = avio_open(&fmt_ctx_->pb, url_.c_str(), AVIO_FLAG_WRITE);
-    if(ret!=0){
-        char errStr[64] = { 0 };
-        av_strerror(ret, errStr, 64);
-        printf("avio_open failed:%s\n", errStr);
-        return -1;
+    int ret;
+    if(!fmt_ctx_->pb){
+        ret = avio_open(&fmt_ctx_->pb, url_.c_str(), AVIO_FLAG_WRITE);
+        if(ret<0){
+            char errStr[64] = { 0 };
+            av_strerror(ret, errStr, 64);
+            printf("avio_open failed:%s\n", errStr);
+            return -1;
+        }
     }
+    
 
     ret = avformat_write_header(fmt_ctx_, nullptr);
-    if(ret!=0){
+    if(ret<0){
         char errStr[64] = { 0 };
         av_strerror(ret, errStr, 64);
         printf("avformat_write_header failed:%s\n", errStr);
@@ -120,7 +123,7 @@ int Muxer::WritePacket(AVPacket *packet){
 
     
     int ret = av_interleaved_write_frame(fmt_ctx_, packet);
-    if(ret!=0){
+    if(ret<0){
         char errStr[64] = { 0 };
         av_strerror(ret, errStr, 64);   
         printf("av_interleaved_write_frame failed:%s\n", errStr);
@@ -138,11 +141,20 @@ int Muxer::WriteTrailer(){
     }
 
     int ret = av_write_trailer(fmt_ctx_);
-    if(ret!=0){
+    if(ret<0){
         AV_ERR(ret, "av_write_trailer failed");
         // char errStr[64] = { 0 };
         // av_strerror(ret, errStr, 64); 
         // printf("av_write_trailer failed:%s\n", errStr);
+        return -1;
+    }
+    return 0;
+}
+
+int Muxer::Open(){
+    int ret = avio_open(&fmt_ctx_->pb, url_.c_str(), AVIO_FLAG_WRITE);
+    if(ret<0){
+        AV_ERR(ret, "avio_open %s", url_.c_str());
         return -1;
     }
     return 0;

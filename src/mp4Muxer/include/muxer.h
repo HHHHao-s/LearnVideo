@@ -2,11 +2,13 @@
 #define MUXER_H
 #include <string>
 
-#define AV_ERR(ret, msg) \
+#define AV_ERR(ret, ...) \
     {\
         char errStr[64] = { 0 };\
-        av_strerror(ret, errStr, 64);\
-        printf("%s %d %s:%s\n",__FILE__, __LINE__, msg, errStr);\
+        av_strerror((ret), errStr, 64);\
+        printf("%s %d %s:",__FILE__, __LINE__, errStr);\
+        printf(__VA_ARGS__);\
+        putchar('\n');\
     }
 
 #define AV_MSG(msg) \
@@ -32,6 +34,15 @@ public:
     int WriteTrailer();
 
     int Open();// avio open
+
+    int GetVideoIndex(){
+        return video_index_;
+    }
+
+    int GetAudioIndex(){
+        return audio_index_;
+    }
+
 private:
     std::string url_;
     AVFormatContext* fmt_ctx_{nullptr};

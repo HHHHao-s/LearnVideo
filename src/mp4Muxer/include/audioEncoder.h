@@ -47,6 +47,14 @@ public:
     
     }
 
+    const AVChannelLayout& GetChLayout(){
+        if(codec_ctx_==nullptr) return (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+        return codec_ctx_->ch_layout;
+    }
+
+    AVCodecContext* GetCtx(){
+        return codec_ctx_;
+    }
 
 private:
     std::string url_;

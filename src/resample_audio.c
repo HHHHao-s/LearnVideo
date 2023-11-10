@@ -108,8 +108,8 @@ int main(int argc, char **argv)
                 "This program generates a series of audio frames, resamples them to a specified "
                 "output format and rate and saves them to an output file named output_file.\n",
             argv[0]);
-            src_filename = "test.aac";
-            dst_filename = "test_resample.aac";
+
+            dst_filename = "test_resample.pcm";
         // exit(1);
     }else{
         dst_filename = argv[1];
