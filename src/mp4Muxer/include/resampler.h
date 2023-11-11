@@ -23,6 +23,7 @@ class Resampler
 {
 public:
     Resampler(){
+        test_ = fopen("test.pcm", "wb");
 
     }
     ~Resampler(){
@@ -34,12 +35,7 @@ public:
             printf("swr_ctx_ is not nullptr\n");
             return -1;
         }
-        int ret =0;
-        swr_ctx_ = swr_alloc();
-        if (!swr_ctx_) {
-            fprintf(stderr, "Could not allocate resampler context\n");
-            return -1;
-        }
+        int ret = 0;
         
         ret = swr_alloc_set_opts2(&swr_ctx_, &out_ch_layout, out_sample_fmt, out_sample_rate,
                 &in_ch_layout, in_sample_fmt, in_sample_rate,
@@ -120,12 +116,15 @@ public:
             return nullptr;
         }
         printf("in:%d out:%d\n", src_nb_samples_, ret);
+
+        fwrite(dst_data_[0], 1, dst_bufsize, test_);
+
         return dst_data_;
     }
 
 
 private:
-
+    FILE *test_;
     SwrContext* swr_ctx_{nullptr};
     
     

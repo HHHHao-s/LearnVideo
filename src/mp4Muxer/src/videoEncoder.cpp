@@ -75,6 +75,7 @@ int VideoEncoder::InitH264(int width, int height, int fps, int bitrate)
         printf("avcodec_alloc_context3 failed\n");
         return -1;
     }
+    
     codec_ctx_->codec_id = AV_CODEC_ID_H264;
     codec_ctx_->codec_type = AVMEDIA_TYPE_VIDEO;
     codec_ctx_->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -127,7 +128,7 @@ std::queue<AVPacket*> VideoEncoder::Encode(uint8_t* yuv_data, int yuv_size, int 
             printf("av_image_fill_arrays failed\n");
             return {};
         }
-        printf("video send frame\n");
+        printf("video send frame%d\n" ,frame_->pts);
         ret = avcodec_send_frame(codec_ctx_, frame_);
     }else{
         // Flush encoder

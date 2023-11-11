@@ -15,7 +15,8 @@
 #define PCM_SAMPLE_FORMAT AV_SAMPLE_FMT_S16
 #define PCM_CH_LAYOUT AV_CH_LAYOUT_STEREO
 #define TIME_BASE 1000000
-
+// ffmpeg -i sync-h264.mp4 -an -video_size 1920x1080 -pixel_format yuv420p -t 15 sync_1920x1080_yuv420p.yuv
+// ffmpeg -i sync-h264.mp4 -vn -ar 48000 -f s16le -s 2 -t 15 sync_48000_2_s16le.pcm
 int main(int argc, char **argv){
 
     const char* yuv_name = NULL;
@@ -24,7 +25,7 @@ int main(int argc, char **argv){
     if(argc!=4){
         printf("Usage: %s <*.yuv> <*.pcm> <output file>\n", argv[0]);
         yuv_name = "sync_1920x1080_yuv420p.yuv";
-        pcm_name = "sync_44100_2_s16le.pcm";
+        pcm_name = "sync_48000_2_s16le.pcm";
         output_file = "sync-my.mp4";
     }else{
         printf("input file: %s\n", argv[1]);
@@ -115,7 +116,7 @@ int main(int argc, char **argv){
 
     while(!audio_eof || !video_eof){
         if(!audio_eof){
-            ret = fread(&pcm_data[0], 1, read_pcm_size, pcm_fp);
+            ret = fread(pcm_data[0], 1, read_pcm_size, pcm_fp);
             if(ret!=read_pcm_size){
                 printf("fread audio finish\n");
                 audio_eof = true;
