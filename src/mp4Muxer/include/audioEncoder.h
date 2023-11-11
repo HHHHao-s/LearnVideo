@@ -23,8 +23,8 @@ public:
     ~AudioEncoder();
     int InitAAC(int channels, int sample_rate, int bit_rate);
     void DeInit();
-    
-    std::queue<AVPacket*> Encode(AVFrame* frame, int stream_index, int64_t pts, int64_t time_base);
+
+    std::queue<AVPacket*> Encode(uint8_t *data, int stream_index, int64_t pts, int64_t time_base);
     int GetFrameSize(){// 一帧数据每个通道的采样数
         if(codec_ctx_==nullptr) return -1;
         return codec_ctx_->frame_size;
@@ -41,7 +41,7 @@ public:
         if(codec_ctx_==nullptr) return -1;
         return codec_ctx_->sample_rate;
     }
-    int GetSamepleFormat(){
+    int GetSampleFormat(){
         if(codec_ctx_==nullptr) return -1;
         return codec_ctx_->sample_fmt;
     
@@ -59,7 +59,7 @@ public:
 private:
     std::string url_;
     // AVFormatContext* fmt_ctx_{nullptr};
-
+    AVFrame* frame_;
     // 编码器
     AVCodecContext* codec_ctx_{nullptr};
 

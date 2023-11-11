@@ -65,6 +65,12 @@ public:
         src_nb_samples_ = src_nb_samples;
         max_dst_nb_samples_ = av_rescale_rnd(src_nb_samples, out_sample_rate, in_sample_rate, AV_ROUND_UP);
 
+        ret = av_samples_alloc_array_and_samples(&dst_data_, &dst_linesize_, out_ch_layout.nb_channels,
+                                             max_dst_nb_samples_, dst_sample_fmt_, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Could not allocate destination samples\n");
+        }
+
         return 0;
     }
 
@@ -120,10 +126,10 @@ public:
 
 private:
 
-    SwrContext* swr_ctx_;
+    SwrContext* swr_ctx_{nullptr};
     
     
-    uint8_t** dst_data_;
+    uint8_t** dst_data_{nullptr};
     int src_rate_;
     int dst_rate_;
     AVSampleFormat src_sample_fmt_;

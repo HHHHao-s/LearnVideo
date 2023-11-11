@@ -59,48 +59,21 @@ int main(int argc, char **argv){
     AudioEncoder audioEncoder;
     audioEncoder.InitAAC(PCM_CHANNEL, PCM_SAMPLE_RATE, PCM_BIT_RATE);
 
-    // uint8_t **src_data=NULL;
-    // int line_size=0;
-    // AVChannelLayout src_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
-    // AVSampleFormat src_sample_fmt = AV_SAMPLE_FMT_S16;
-    // int src_rate = 1024;
-    // ret = av_samples_alloc_array_and_samples(&src_data, &line_size, src_ch_layout.nb_channels, 1024, src_sample_fmt, 1 );
-    // if(ret<0){
-    //     AV_ERR(ret, "av_samples_alloc_array_and_samples");
-    //     return -1;
-    // }
-
-    // Resampler resampler;
-    // resampler.Init(src_ch_layout, 1024,src_sample_fmt, src_ch_layout, 1024, )
-    AVSampleFormat pcm_sample_fmt = PCM_SAMPLE_FORMAT;
-    AVChannelLayout pcm_ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
-    
-    AVFrame *frame = av_frame_alloc();
-    if (!frame) {
-        fprintf(stderr, "Could not allocate audio frame\n");
-        exit(1);
-    }
-
-    frame->nb_samples     = audioEncoder.GetFrameSize();
-    frame->format         = PCM_SAMPLE_FORMAT;
-
-    ret = av_channel_layout_copy(&frame->ch_layout, (const AVChannelLayout *)&audioEncoder.GetChLayout());
-    if (ret < 0)
-        exit(1);
-
-    /* allocate the data buffers */
-    ret = av_frame_get_buffer(frame, 0);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate audio data buffers\n");
-        exit(1);
-    }
-    size_t pcm_frame_size = av_samples_get_buffer_size(&frame->linesize[0], frame->ch_layout.nb_channels, frame->nb_samples, PCM_SAMPLE_FORMAT, 0);
-
-    uint8_t *pcm_buffer =(uint8_t *)av_buffer_alloc(pcm_frame_size);
-    if(!pcm_buffer){
-        printf("av_buffer_alloc");
+    uint8_t **pcm_data=NULL;
+    int line_size=0;
+    AVChannelLayout src_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
+    AVSampleFormat src_sample_fmt = AV_SAMPLE_FMT_S16;
+    AVSampleFormat dst_sample_fmt = (AVSampleFormat)audioEncoder.GetSampleFormat();
+    int src_rate = PCM_SAMPLE_RATE;
+    int src_nb_samples = audioEncoder.GetFrameSize();
+    ret = av_samples_alloc_array_and_samples(&pcm_data, &line_size, src_ch_layout.nb_channels, src_rate, src_sample_fmt, 1 );
+    int read_pcm_size = src_nb_samples * src_ch_layout.nb_channels * av_get_bytes_per_sample(src_sample_fmt);
+    if(ret<0){
+        AV_ERR(ret, "av_samples_alloc_array_and_samples");
         return -1;
     }
+    Resampler resampler;
+    resampler.Init(src_ch_layout, src_rate,src_sample_fmt, src_ch_layout, src_rate, dst_sample_fmt, src_nb_samples);
 
     Muxer muxer;
     muxer.Init(output_file);
@@ -134,45 +107,39 @@ int main(int argc, char **argv){
     double audio_frame_duration = 1.0 *audioEncoder.GetFrameSize()/ audioEncoder.GetSampleRate()*audio_time_base;
     double video_frame_duration = 1.0 / YUV_FPS * video_time_base;
 
-    bool audio_eof = true;// 先测试视频
+    bool audio_eof = false;// 先测试视频
     bool video_eof = false;
 
     int audio_index = muxer.GetAudioIndex();
     int video_index = muxer.GetVideoIndex();
 
     while(!audio_eof || !video_eof){
-        // if(!audio_eof){
-        //     ret = fread(pcm_buffer, 1, pcm_frame_size, pcm_fp);
-        //     if(ret!=pcm_frame_size){
-        //         printf("fread audio finish\n");
-        //         audio_eof = true;
-        //     }
-        // }
+        if(!audio_eof){
+            ret = fread(&pcm_data[0], 1, read_pcm_size, pcm_fp);
+            if(ret!=read_pcm_size){
+                printf("fread audio finish\n");
+                audio_eof = true;
+            }
+            uint8_t** dst_data = resampler.ReSample(pcm_data);
+            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t*)dst_data, audio_index, audio_pts, audio_time_base);
+            while(!q.empty()){
+                AVPacket* pkt = q.front(); // 可以为pkt实现RAII
+                q.pop();
+                pkt->stream_index = audio_index;
+                ret = muxer.WritePacket(pkt);
+                if(ret<0){
+                    printf("WritePacket audio failed\n");
+                    return -1;
+                }
+                audio_pts += audio_frame_duration;
+            }
+        }
         if(!video_eof){
             ret = fread(yuv_buffer, 1, yuv_size, yuv_fp);
             if(ret!=yuv_size){
                 printf("fread video finish\n");
                 video_eof = true;
             }
-        }
-        if(audio_eof && video_eof){
-            break;
-        }
-        // if(!audio_eof){
-        //     std::queue<AVPacket*> q = audioEncoder.Encode(frame, audio_index, audio_pts, audio_time_base);
-        //     while(!q.empty()){
-        //         AVPacket* pkt = q.front(); // 可以为pkt实现RAII
-        //         q.pop();
-        //         pkt->stream_index = audio_index;
-        //         ret = muxer.WritePacket(pkt);
-        //         if(ret<0){
-        //             printf("WritePacket audio failed\n");
-        //             return -1;
-        //         }
-        //         audio_pts += audio_frame_duration;
-        //     }
-        // }
-        if(!video_eof){
             std::queue<AVPacket*> q = videoEncoder.Encode(yuv_buffer, yuv_size, video_index, video_pts, video_time_base);
             while(!q.empty()){
                 AVPacket* pkt = q.front();
@@ -190,7 +157,7 @@ int main(int argc, char **argv){
     }
     // flush
     videoEncoder.Encode(nullptr, 0, video_index, video_pts, video_time_base);
-    // audioEncoder.Encode(nullptr, 0, audio_index, audio_pts, audio_time_base);
+    audioEncoder.Encode(nullptr, audio_index, audio_pts, audio_time_base);
     
     ret = muxer.WriteTrailer();
     if(ret<0){
@@ -208,8 +175,8 @@ int main(int argc, char **argv){
     if(yuv_buffer)
         av_freep(&yuv_buffer);
 
-    if(pcm_buffer)
-        av_freep(&pcm_buffer);
+    if(pcm_data)
+        av_freep(&pcm_data);
 
     return 0;
 

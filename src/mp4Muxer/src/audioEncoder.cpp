@@ -48,14 +48,45 @@ int AudioEncoder::InitAAC(int channels, int sample_rate, int bit_rate ){
         return -1;
     }
     AV_MSG("avcodec_open2 success");
+
+    // 有关frame的要设置成编码器的参数
+    AVSampleFormat pcm_sample_fmt = (AVSampleFormat)codec_ctx_->sample_fmt;
+    AVFrame *frame = av_frame_alloc();
+    if (!frame) {
+        fprintf(stderr, "Could not allocate audio frame\n");
+        exit(1);
+    }
+
+    frame->nb_samples     = GetFrameSize();
+    frame->format         = pcm_sample_fmt;
+
+    ret = av_channel_layout_copy(&frame->ch_layout, (const AVChannelLayout *)&GetChLayout());
+    if (ret < 0)
+        exit(1);
+
+    /* allocate the data buffers */
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate audio data buffers\n");
+        exit(1);
+    }
+    size_t encode_pcm_frame_size = av_samples_get_buffer_size(&frame->linesize[0], frame->ch_layout.nb_channels, frame->nb_samples,(AVSampleFormat) frame->format, 0);
+
+    uint8_t *pcm_buffer =(uint8_t *)av_buffer_alloc(encode_pcm_frame_size);
+    if(!pcm_buffer){
+        printf("av_buffer_alloc");
+        return -1;
+    }
+
+
     return 0;
 
 
 }
 
-std::queue<AVPacket*> AudioEncoder::Encode(AVFrame* frame, int stream_index, int64_t pts, int64_t time_base){
+std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int stream_index, int64_t pts, int64_t time_base){
 
-    if(!frame){
+    if(!data){
         printf("frame is nullptr\n");
         return {};
     }
@@ -65,9 +96,12 @@ std::queue<AVPacket*> AudioEncoder::Encode(AVFrame* frame, int stream_index, int
     }
     
     // av_packet_rescale_ts(pkt, AVRational{1,(int)time_base}, codec_ctx_->time_base);
-    frame->pts = av_rescale_q(pts, AVRational{1,(int)time_base}, codec_ctx_->time_base);
-    
-    int ret = avcodec_send_frame(codec_ctx_, frame);
+     av_frame_make_writable(frame_);
+    frame_->pts = av_rescale_q(pts, AVRational{1,(int)time_base}, codec_ctx_->time_base);
+   
+    av_samples_fill_arrays(frame_->data, frame_->linesize, (const uint8_t *)data, codec_ctx_->channels, codec_ctx_->frame_size, codec_ctx_->sample_fmt, 1);
+
+    int ret = avcodec_send_frame(codec_ctx_, frame_);
     if(ret!=0){
         AV_ERR(ret, "avcodec_send_frame");
         return {};
