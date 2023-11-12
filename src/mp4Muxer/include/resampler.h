@@ -19,8 +19,9 @@ extern "C" {
     }
 
 struct SampleData{
-    uint8_t* data;
-    int size;
+    uint8_t** data_arr;
+    int line_size;
+    int nb_samples;
 };
 
 
@@ -30,7 +31,7 @@ public:
     Resampler(){
         // ffplay -ar 48000 -channels 2 -f f32le test_fltp_48000_2.pcm
         // ffplay -ar 48000 -channels 2 -f f32le test_flt_48000_2.pcm
-        test_ = fopen("test_fltp_48000_2.pcm", "wb");
+        // test_ = fopen("test_fltp_48000_2.pcm", "wb");
 
     }
     ~Resampler(){
@@ -38,7 +39,7 @@ public:
     }
 
     int Init(AVChannelLayout in_ch_layout, int in_sample_rate,AVSampleFormat in_sample_fmt, AVChannelLayout out_ch_layout, int out_sample_rate,AVSampleFormat out_sample_fmt,int src_nb_samples){
-        test_buf = (float*)av_malloc(8192);
+        // test_buf = (float*)av_malloc(8192);
         if(swr_ctx_){
             printf("swr_ctx_ is not nullptr\n");
             return -1;
@@ -67,7 +68,9 @@ public:
             return -1;
         }
         src_nb_samples_ = src_nb_samples;
-        max_dst_nb_samples_ = av_rescale_rnd(src_nb_samples, out_sample_rate, in_sample_rate, AV_ROUND_UP);
+        // 分配大一点，不然重新分配再encode会出问题
+        max_dst_nb_samples_ = av_rescale_rnd(src_nb_samples, out_sample_rate, in_sample_rate, AV_ROUND_UP)+1000;
+        max_dst_nb_samples_ = src_nb_samples>max_dst_nb_samples_?src_nb_samples:max_dst_nb_samples_;
 
         ret = av_samples_alloc_array_and_samples(&dst_data_, &dst_linesize_, out_ch_layout.nb_channels,
                                              max_dst_nb_samples_, dst_sample_fmt_, 0);
@@ -90,6 +93,7 @@ public:
         deinited_ = true;
     }
     // 不要在消费完dst_data前调用这个函数
+    // 返回指向一个指针数组和sample个数
     SampleData ReSample(uint8_t** src_data){
         
         int ret = 0;
@@ -128,20 +132,23 @@ public:
         float * L = (float*)dst_data_[0];
         float * R = (float*)dst_data_[1];
 
-        for(int i=0, p = 0;i<dst_bufsize/8;i++,p+=2){
-            test_buf[p] = L[i];
-            test_buf[p+1] = R[i];
+        // for(int i=0, p = 0;i<dst_bufsize/8;i++,p+=2){
+        //     test_buf[p] = L[i];
+        //     test_buf[p+1] = R[i];
             
-        }
+        // }
 
         // dst_data_ 是一个指针数组，指向的是一个数组，数组的每个元素是一个通道的数据
         // 两个通道是空间上相邻的，所以我们要返回第一个通道的地址，即dst_data_[0]
         // 而不是这个指针数组的地址，即dst_data_
 
 
-        fwrite(dst_data_, 1, dst_bufsize, test_);
+        // fwrite(dst_data_, 1, dst_bufsize, test_);
 
-        return {dst_data_[0],dst_bufsize };
+        // return {dst_data_[0],dst_nb_samples };
+
+        // 可以返回这个dst_data_，在encode中进行处理就可以
+        return {dst_data_,dst_linesize_ ,dst_nb_samples};
     }
 
 

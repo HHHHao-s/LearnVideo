@@ -24,7 +24,7 @@ public:
     int InitAAC(int channels, int sample_rate, int bit_rate);
     void DeInit();
 
-    std::queue<AVPacket*> Encode(uint8_t *data,int data_size, int stream_index, int64_t pts, int64_t time_base);
+    std::queue<AVPacket*> Encode(uint8_t **data, int line_size, int stream_index, int64_t pts, int64_t time_base);
     int GetFrameSize(){// 一帧数据每个通道的采样数
         if(codec_ctx_==nullptr) return -1;
         return codec_ctx_->frame_size;
@@ -75,7 +75,7 @@ private:
     int sample_rate_{44100};
     int bit_rate_{128000};
 
-    FILE *test_{nullptr};
+    // FILE *test_{nullptr};
 
 
 };

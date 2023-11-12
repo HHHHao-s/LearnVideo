@@ -15,7 +15,7 @@
 #define PCM_SAMPLE_FORMAT AV_SAMPLE_FMT_S16
 #define PCM_CH_LAYOUT AV_CH_LAYOUT_STEREO
 #define TIME_BASE 1000000
-#define DST_PCM_SAMPLE_RATE 48000
+#define DST_PCM_SAMPLE_RATE 44100
 // ffmpeg -i sync-h264.mp4 -an -video_size 1920x1080 -pixel_format yuv420p -t 15 sync_1920x1080_yuv420p.yuv
 // ffmpeg -i sync-h264.mp4 -vn -ar 48000 -f s16le -s 2 -t 15 sync_48000_2_s16le.pcm
 int main(int argc, char **argv){
@@ -126,8 +126,8 @@ int main(int argc, char **argv){
                 audio_eof = true;
             }
 
-            auto [dst_data,size] = resampler.ReSample(pcm_data);
-            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t*)dst_data, size, audio_index, audio_pts, audio_time_base);
+            auto [dst_data_arr,line_size,nb_samples] = resampler.ReSample(pcm_data);
+            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t**)dst_data_arr,line_size, audio_index, audio_pts, audio_time_base);
             while(!q.empty()){
                 AVPacket* pkt = q.front(); // 可以为pkt实现RAII
                 q.pop();

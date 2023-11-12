@@ -20,11 +20,11 @@ void AudioEncoder::DeInit(){
 
 int AudioEncoder::InitAAC(int channels, int sample_rate, int bit_rate ){
 
-    test_ = fopen("test.aac", "wb");
-    if(!test_){
-        printf("fopen test.aac failed\n");
-        return -1;
-    }
+    // test_ = fopen("test.aac", "wb");
+    // if(!test_){
+    //     printf("fopen test.aac failed\n");
+    //     return -1;
+    // }
 
     channels_ = channels;
     sample_rate_ = sample_rate;
@@ -71,7 +71,9 @@ int AudioEncoder::InitAAC(int channels, int sample_rate, int bit_rate ){
         exit(1);
     
     /* allocate the data buffers */
-    ret = av_frame_get_buffer(frame_, 0);
+
+    // 不需要分配buffer，因为frame的data指向resampler的dst_data
+    // ret = av_frame_get_buffer(frame_, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate audio data buffers\n");
         exit(1);
@@ -125,7 +127,7 @@ static void getAdstHeader(unsigned char* adtsHeader,AVCodecContext *ctx, int len
 
 }
 
-std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int data_size, int stream_index, int64_t pts, int64_t time_base){
+std::queue<AVPacket*> AudioEncoder::Encode( uint8_t ** data, int line_size,int stream_index, int64_t pts, int64_t time_base){
 
     if(!data){
         printf("frame is nullptr\n");
@@ -137,11 +139,18 @@ std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int data_size, int s
     }
     
     // av_packet_rescale_ts(pkt, AVRational{1,(int)time_base}, codec_ctx_->time_base);
-    av_frame_make_writable(frame_);
+    // av_frame_make_writable(frame_);
     frame_->pts = av_rescale_q(pts, AVRational{1,(int)time_base}, codec_ctx_->time_base);
    
+    
 
-    av_samples_fill_arrays(frame_->data, frame_->linesize, (const uint8_t *)data, codec_ctx_->ch_layout.nb_channels, codec_ctx_->frame_size, codec_ctx_->sample_fmt, 1);
+    // av_samples_fill_arrays(frame_->data, frame_->linesize, (const uint8_t *)data[0], codec_ctx_->ch_layout.nb_channels, 1024, codec_ctx_->sample_fmt, 1);
+
+    frame_->data[0] = data[0];
+    frame_->data[1] = data[1];
+    // audio 只用设置linesize[0]
+    frame_->linesize[0] = line_size;
+
 
     int ret = avcodec_send_frame(codec_ctx_, frame_);
     if(ret!=0){
