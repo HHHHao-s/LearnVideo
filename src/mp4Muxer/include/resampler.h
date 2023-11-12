@@ -18,12 +18,19 @@ extern "C" {
         printf("%s %d %s\n",__FILE__, __LINE__, msg);\
     }
 
+struct SampleData{
+    uint8_t* data;
+    int size;
+};
+
 
 class Resampler
 {
 public:
     Resampler(){
-        test_ = fopen("test.pcm", "wb");
+        // ffplay -ar 48000 -channels 2 -f f32le test_fltp_48000_2.pcm
+        // ffplay -ar 48000 -channels 2 -f f32le test_flt_48000_2.pcm
+        test_ = fopen("test_fltp_48000_2.pcm", "wb");
 
     }
     ~Resampler(){
@@ -31,6 +38,7 @@ public:
     }
 
     int Init(AVChannelLayout in_ch_layout, int in_sample_rate,AVSampleFormat in_sample_fmt, AVChannelLayout out_ch_layout, int out_sample_rate,AVSampleFormat out_sample_fmt,int src_nb_samples){
+        test_buf = (float*)av_malloc(8192);
         if(swr_ctx_){
             printf("swr_ctx_ is not nullptr\n");
             return -1;
@@ -52,7 +60,7 @@ public:
         dst_ch_layout_ = out_ch_layout;
         dst_sample_fmt_ = out_sample_fmt;
 
-
+        
         ret = swr_init(swr_ctx_);
         if (ret < 0) {
             AV_ERR(ret, "swr_init failed");
@@ -82,7 +90,7 @@ public:
         deinited_ = true;
     }
     // 不要在消费完dst_data前调用这个函数
-    uint8_t ** ReSample(uint8_t** src_data){
+    SampleData ReSample(uint8_t** src_data){
         
         int ret = 0;
         int64_t delay = swr_get_delay(swr_ctx_, src_rate_);
@@ -96,7 +104,7 @@ public:
                                    dst_nb_samples, dst_sample_fmt_, 1);
             if (ret < 0){
                 AV_ERR(ret, "av_samples_alloc");
-                return nullptr;
+                return {nullptr,-1};
             }
                 
             max_dst_nb_samples_ = dst_nb_samples;
@@ -106,20 +114,34 @@ public:
         ret = swr_convert(swr_ctx_, dst_data_, dst_nb_samples, (const uint8_t **)src_data, src_nb_samples_);
         if (ret < 0) {
             AV_ERR(ret, "Error while converting");
-            return nullptr;
+            return {nullptr,-1};
         }
         int dst_bufsize = av_samples_get_buffer_size(&dst_linesize_, dst_ch_layout_.nb_channels,
                                                  ret, dst_sample_fmt_, 1);
         if (dst_bufsize < 0) {
             AV_ERR(ret, "Could not get sample buffer size");
 
-            return nullptr;
+            return {nullptr,-1};
         }
-        printf("in:%d out:%d\n", src_nb_samples_, ret);
+        printf("in:%d out:%d\n", src_nb_samples_, dst_bufsize);
 
-        fwrite(dst_data_[0], 1, dst_bufsize, test_);
+        float * L = (float*)dst_data_[0];
+        float * R = (float*)dst_data_[1];
 
-        return dst_data_;
+        for(int i=0, p = 0;i<dst_bufsize/8;i++,p+=2){
+            test_buf[p] = L[i];
+            test_buf[p+1] = R[i];
+            
+        }
+
+        // dst_data_ 是一个指针数组，指向的是一个数组，数组的每个元素是一个通道的数据
+        // 两个通道是空间上相邻的，所以我们要返回第一个通道的地址，即dst_data_[0]
+        // 而不是这个指针数组的地址，即dst_data_
+
+
+        fwrite(dst_data_, 1, dst_bufsize, test_);
+
+        return {dst_data_[0],dst_bufsize };
     }
 
 
@@ -127,7 +149,7 @@ private:
     FILE *test_;
     SwrContext* swr_ctx_{nullptr};
     
-    
+    float * test_buf;
     uint8_t** dst_data_{nullptr};
     int src_rate_;
     int dst_rate_;

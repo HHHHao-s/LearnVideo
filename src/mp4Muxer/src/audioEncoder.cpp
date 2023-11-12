@@ -20,6 +20,12 @@ void AudioEncoder::DeInit(){
 
 int AudioEncoder::InitAAC(int channels, int sample_rate, int bit_rate ){
 
+    test_ = fopen("test.aac", "wb");
+    if(!test_){
+        printf("fopen test.aac failed\n");
+        return -1;
+    }
+
     channels_ = channels;
     sample_rate_ = sample_rate;
     bit_rate_ = bit_rate;
@@ -79,7 +85,47 @@ int AudioEncoder::InitAAC(int channels, int sample_rate, int bit_rate ){
 
 }
 
-std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int stream_index, int64_t pts, int64_t time_base){
+static void getAdstHeader(unsigned char* adtsHeader,AVCodecContext *ctx, int len)
+
+{
+    int sampleRate = ctx->sample_rate;
+    int freqIdx = 0; //默认为0
+    switch (sampleRate)
+    {   case 96000: freqIdx = 0; break;
+        case 88200: freqIdx = 1; break;
+        case 64000: freqIdx = 2; break;
+        case 48000: freqIdx = 3; break;
+        case 44100: freqIdx = 4; break;
+        case 32000: freqIdx = 5; break;
+        case 24000: freqIdx = 6; break;
+        case 22050: freqIdx = 7; break;
+        case 16000: freqIdx = 8; break;
+        case 12000: freqIdx = 9; break;
+        case 11025: freqIdx = 10; break;
+        case 8000: freqIdx = 11; break;
+        case 7350: freqIdx = 12; break;
+        default: freqIdx = 15; break;//如果都不是默认为15
+
+    }
+
+	
+    
+	int packetLen=len+7;//ADTS头加AAC数据总长度
+    int profile = ctx->profile;
+    int chanCfg = ctx->ch_layout.nb_channels;
+	adtsHeader[0] = (unsigned char) 0xFF;
+    adtsHeader[1] = (unsigned char) 0xF9;
+    adtsHeader[2] = (unsigned char) (((profile - 1) << 6) + (freqIdx << 2) + (chanCfg >> 2));
+    adtsHeader[3] = (unsigned char) (((chanCfg & 3) << 6) + (packetLen >> 11));
+    adtsHeader[4] = (unsigned char) ((packetLen & 0x7FF) >> 3);
+    adtsHeader[5] = (unsigned char) (((packetLen & 7) << 5) + 0x1F);
+    adtsHeader[6] = (unsigned char) 0xFC;
+	
+	
+
+}
+
+std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int data_size, int stream_index, int64_t pts, int64_t time_base){
 
     if(!data){
         printf("frame is nullptr\n");
@@ -94,7 +140,8 @@ std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int stream_index, in
     av_frame_make_writable(frame_);
     frame_->pts = av_rescale_q(pts, AVRational{1,(int)time_base}, codec_ctx_->time_base);
    
-    av_samples_fill_arrays(frame_->data, frame_->linesize, (const uint8_t *)data, codec_ctx_->channels, codec_ctx_->frame_size, codec_ctx_->sample_fmt, 1);
+
+    av_samples_fill_arrays(frame_->data, frame_->linesize, (const uint8_t *)data, codec_ctx_->ch_layout.nb_channels, codec_ctx_->frame_size, codec_ctx_->sample_fmt, 1);
 
     int ret = avcodec_send_frame(codec_ctx_, frame_);
     if(ret!=0){
@@ -125,6 +172,17 @@ std::queue<AVPacket*> AudioEncoder::Encode( uint8_t * data, int stream_index, in
         pkt->stream_index = stream_index;
         q.push(pkt);
     }
+    printf("audio receive packet%d\n" ,q.size());
+    // for(int i=0;i<q.size();i++){
+    //     AVPacket* pkt = q.front();
+    //     q.pop();
+    //     unsigned char adtsHeader[7];
+    //     getAdstHeader(adtsHeader,codec_ctx_,pkt->size);
+    //     fwrite(adtsHeader, 1, 7, test_);
+    //     fwrite(pkt->data, 1, pkt->size, test_);
+    //     // av_packet_free(&pkt);
+    // }
+
 
     return q;
 

@@ -15,6 +15,7 @@
 #define PCM_SAMPLE_FORMAT AV_SAMPLE_FMT_S16
 #define PCM_CH_LAYOUT AV_CH_LAYOUT_STEREO
 #define TIME_BASE 1000000
+#define DST_PCM_SAMPLE_RATE 48000
 // ffmpeg -i sync-h264.mp4 -an -video_size 1920x1080 -pixel_format yuv420p -t 15 sync_1920x1080_yuv420p.yuv
 // ffmpeg -i sync-h264.mp4 -vn -ar 48000 -f s16le -s 2 -t 15 sync_48000_2_s16le.pcm
 int main(int argc, char **argv){
@@ -65,8 +66,10 @@ int main(int argc, char **argv){
     AVChannelLayout src_ch_layout = AV_CHANNEL_LAYOUT_STEREO;
     AVSampleFormat src_sample_fmt = AV_SAMPLE_FMT_S16;
     AVSampleFormat dst_sample_fmt = (AVSampleFormat)audioEncoder.GetSampleFormat();
+    // AVSampleFormat dst_sample_fmt = AV_SAMPLE_FMT_FLT;
     int src_rate = PCM_SAMPLE_RATE;
     int src_nb_samples = audioEncoder.GetFrameSize();
+    int dst_rate = DST_PCM_SAMPLE_RATE;
     ret = av_samples_alloc_array_and_samples(&pcm_data, &line_size, src_ch_layout.nb_channels, src_rate, src_sample_fmt, 1 );
     int read_pcm_size = src_nb_samples * src_ch_layout.nb_channels * av_get_bytes_per_sample(src_sample_fmt);
     if(ret<0){
@@ -74,7 +77,7 @@ int main(int argc, char **argv){
         return -1;
     }
     Resampler resampler;
-    resampler.Init(src_ch_layout, src_rate,src_sample_fmt, src_ch_layout, src_rate, dst_sample_fmt, src_nb_samples);
+    resampler.Init(src_ch_layout, src_rate,src_sample_fmt, src_ch_layout, dst_rate, dst_sample_fmt, src_nb_samples);
 
     Muxer muxer;
     muxer.Init(output_file);
@@ -113,6 +116,7 @@ int main(int argc, char **argv){
 
     int audio_index = muxer.GetAudioIndex();
     int video_index = muxer.GetVideoIndex();
+    
 
     while(!audio_eof || !video_eof){
         if(!audio_eof){
@@ -121,8 +125,9 @@ int main(int argc, char **argv){
                 printf("fread audio finish\n");
                 audio_eof = true;
             }
-            uint8_t** dst_data = resampler.ReSample(pcm_data);
-            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t*)dst_data, audio_index, audio_pts, audio_time_base);
+
+            auto [dst_data,size] = resampler.ReSample(pcm_data);
+            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t*)dst_data, size, audio_index, audio_pts, audio_time_base);
             while(!q.empty()){
                 AVPacket* pkt = q.front(); // 可以为pkt实现RAII
                 q.pop();
@@ -132,8 +137,9 @@ int main(int argc, char **argv){
                     printf("WritePacket audio failed\n");
                     return -1;
                 }
-                audio_pts += audio_frame_duration;
+                
             }
+            audio_pts += audio_frame_duration;
         }
         if(!video_eof){
             ret = fread(yuv_buffer, 1, yuv_size, yuv_fp);
@@ -145,8 +151,9 @@ int main(int argc, char **argv){
             while(!q.empty()){
                 AVPacket* pkt = q.front();
                 q.pop();
-                ret = muxer.WritePacket(pkt);
                 pkt->stream_index = video_index;
+                ret = muxer.WritePacket(pkt);
+                
                 if(ret<0){
                     printf("WritePacket video failed\n");
                     return -1;
@@ -158,7 +165,7 @@ int main(int argc, char **argv){
     }
     // flush
     videoEncoder.Encode(nullptr, 0, video_index, video_pts, video_time_base);
-    audioEncoder.Encode(nullptr, audio_index, audio_pts, audio_time_base);
+    audioEncoder.Encode(nullptr,0,  audio_index, audio_pts, audio_time_base);
     
     ret = muxer.WriteTrailer();
     if(ret<0){

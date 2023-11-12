@@ -75,7 +75,7 @@ int VideoEncoder::InitH264(int width, int height, int fps, int bitrate)
         printf("avcodec_alloc_context3 failed\n");
         return -1;
     }
-    
+   
     codec_ctx_->codec_id = AV_CODEC_ID_H264;
     codec_ctx_->codec_type = AVMEDIA_TYPE_VIDEO;
     codec_ctx_->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -92,7 +92,11 @@ int VideoEncoder::InitH264(int width, int height, int fps, int bitrate)
     codec_ctx_->thread_count = 1;
     codec_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-    int ret = avcodec_open2(codec_ctx_, codec_, NULL);
+    AVDictionary *opts=NULL;
+    av_dict_set(&opts, "preset", "ultrafast", 0);
+    av_dict_set(&opts, "tune", "zerolatency", 0);
+
+    int ret = avcodec_open2(codec_ctx_, codec_, &opts);
     if(ret<0){
         AV_ERR(ret, "avcodec_open2");
         return -1;

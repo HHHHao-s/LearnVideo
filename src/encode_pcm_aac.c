@@ -169,8 +169,8 @@ int main(int argc, char **argv)
 
     if (argc <= 2) {
         fprintf(stderr, "Usage: %s <output file>\n", argv[0]);
-        in_filename = "test.pcm";
-        out_filename = "test.aac";
+        in_filename = "test_fltp_48000_2.pcm";
+        out_filename = "test_fltp_transform_48000_2.aac";
     }else{
         in_filename = argv[1];
         out_filename = argv[2];
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
     }
 
     /* select other audio parameters supported by the encoder */
-    c->sample_rate =select_sample_rate(codec);
+    c->sample_rate =48000;
 
     c->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
    
@@ -273,11 +273,11 @@ int main(int argc, char **argv)
         if(read_bytes <= 0){
             break;
         }
-        memset(in_tmp_buf, 0, frame_size);
-        f32le_to_fltp(in_buf, in_tmp_buf, frame->nb_samples);
+        // memset(in_tmp_buf, 0, frame_size);
+        // f32le_to_fltp(in_buf, in_tmp_buf, frame->nb_samples);
 
-        av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layout.nb_channels, frame->nb_samples, frame->format, 0);
-        
+        // av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layout.nb_channels, frame->nb_samples, frame->format, 0);
+        av_samples_fill_arrays(frame->data, frame->linesize, in_buf, frame->ch_layout.nb_channels, frame->nb_samples, frame->format, 0);
         encode(c, frame, pkt, f);
     }
         
