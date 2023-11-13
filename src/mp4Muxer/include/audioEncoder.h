@@ -24,7 +24,13 @@ public:
     int InitAAC(int channels, int sample_rate, int bit_rate);
     void DeInit();
 
-    std::queue<AVPacket*> Encode(uint8_t **data, int line_size, int stream_index, int64_t pts, int64_t time_base);
+
+    /*
+        传入一个满足编码器要求的frame，返回编码后的packet
+        这个frame可以从resampler中获取
+        frame使用完后会在这个函数中释放
+    */
+    std::queue<AVPacket*> Encode( AVFrame*frame, int stream_index, int64_t pts, int64_t time_base);
     int GetFrameSize(){// 一帧数据每个通道的采样数
         if(codec_ctx_==nullptr) return -1;
         return codec_ctx_->frame_size;
@@ -47,7 +53,7 @@ public:
     
     }
 
-    const AVChannelLayout& GetChLayout(){
+    AVChannelLayout GetChLayout(){
         if(codec_ctx_==nullptr) return (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         return codec_ctx_->ch_layout;
     }
@@ -59,7 +65,7 @@ public:
 private:
     std::string url_;
     // AVFormatContext* fmt_ctx_{nullptr};
-    AVFrame* frame_;
+
     // 编码器
     AVCodecContext* codec_ctx_{nullptr};
 

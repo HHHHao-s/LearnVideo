@@ -67,15 +67,15 @@ public:
             AV_ERR(ret, "swr_init failed");
             return -1;
         }
-        src_nb_samples_ = src_nb_samples;
-        // 分配大一点，不然重新分配再encode会出问题
-        max_dst_nb_samples_ = av_rescale_rnd(src_nb_samples, out_sample_rate, in_sample_rate, AV_ROUND_UP)+1000;
-        max_dst_nb_samples_ = src_nb_samples>max_dst_nb_samples_?src_nb_samples:max_dst_nb_samples_;
+        max_dst_nb_samples_= src_nb_samples_ = src_nb_samples;
+        
+
 
         ret = av_samples_alloc_array_and_samples(&dst_data_, &dst_linesize_, out_ch_layout.nb_channels,
                                              max_dst_nb_samples_, dst_sample_fmt_, 0);
         if (ret < 0) {
-            fprintf(stderr, "Could not allocate destination samples\n");
+            AV_ERR(ret, "Could not allocate destination samples");
+
         }
 
         return 0;
@@ -92,42 +92,29 @@ public:
         }
         deinited_ = true;
     }
-    // 不要在消费完dst_data前调用这个函数
-    // 返回指向一个指针数组和sample个数
-    SampleData ReSample(uint8_t** src_data){
+    
+    // 返回指向一个AVFrame指针，不要在消费完这个AVFrame前调用这个函数
+    // 这个frame的格式对应dst_sample_fmt_，通道数对应dst_ch_layout_，采样率对应dst_rate_
+    AVFrame* ReSample(uint8_t** src_data){
         
         int ret = 0;
-        int64_t delay = swr_get_delay(swr_ctx_, src_rate_);
-        int dst_nb_samples = av_rescale_rnd( delay+
-                                        src_nb_samples_, dst_rate_, src_rate_, AV_ROUND_UP);
-
-                                        
-        if (dst_nb_samples > max_dst_nb_samples_) {
-            av_freep(&dst_data_[0]);
-            ret = av_samples_alloc(dst_data_, &dst_linesize_, dst_ch_layout_.nb_channels,
-                                   dst_nb_samples, dst_sample_fmt_, 1);
-            if (ret < 0){
-                AV_ERR(ret, "av_samples_alloc");
-                return {nullptr,-1};
-            }
-                
-            max_dst_nb_samples_ = dst_nb_samples;
-        }
+        // int64_t delay = swr_get_delay(swr_ctx_, src_rate_);
+        int dst_nb_samples = src_nb_samples_; // 我们要转成和源音频相同的采样数，编码器要求
 
         /* convert to destination format */
         ret = swr_convert(swr_ctx_, dst_data_, dst_nb_samples, (const uint8_t **)src_data, src_nb_samples_);
         if (ret < 0) {
             AV_ERR(ret, "Error while converting");
-            return {nullptr,-1};
+            return nullptr;
         }
         int dst_bufsize = av_samples_get_buffer_size(&dst_linesize_, dst_ch_layout_.nb_channels,
                                                  ret, dst_sample_fmt_, 1);
         if (dst_bufsize < 0) {
             AV_ERR(ret, "Could not get sample buffer size");
 
-            return {nullptr,-1};
+            return nullptr;
         }
-        printf("in:%d out:%d\n", src_nb_samples_, dst_bufsize);
+        printf("in:%d out:%d\n", src_nb_samples_, ret);
 
         float * L = (float*)dst_data_[0];
         float * R = (float*)dst_data_[1];
@@ -148,7 +135,17 @@ public:
         // return {dst_data_[0],dst_nb_samples };
 
         // 可以返回这个dst_data_，在encode中进行处理就可以
-        return {dst_data_,dst_linesize_ ,dst_nb_samples};
+
+        AVFrame* frame = av_frame_alloc();
+        frame->data[0] = dst_data_[0];
+        frame->data[1] = dst_data_[1];
+        // audio 只用设置linesize[0]
+        frame->linesize[0] = dst_linesize_;
+        frame->nb_samples = dst_nb_samples;
+        frame->format = dst_sample_fmt_;
+        frame->ch_layout = dst_ch_layout_;
+
+        return frame;
     }
 
 

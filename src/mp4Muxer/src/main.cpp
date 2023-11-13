@@ -126,8 +126,8 @@ int main(int argc, char **argv){
                 audio_eof = true;
             }
 
-            auto [dst_data_arr,line_size,nb_samples] = resampler.ReSample(pcm_data);
-            std::queue<AVPacket*> q = audioEncoder.Encode((uint8_t**)dst_data_arr,line_size, audio_index, audio_pts, audio_time_base);
+            AVFrame *frame = resampler.ReSample(pcm_data);
+            std::queue<AVPacket*> q = audioEncoder.Encode(frame, audio_index, audio_pts, audio_time_base);
             while(!q.empty()){
                 AVPacket* pkt = q.front(); // 可以为pkt实现RAII
                 q.pop();
@@ -165,7 +165,7 @@ int main(int argc, char **argv){
     }
     // flush
     videoEncoder.Encode(nullptr, 0, video_index, video_pts, video_time_base);
-    audioEncoder.Encode(nullptr,0,  audio_index, audio_pts, audio_time_base);
+    audioEncoder.Encode(nullptr,  audio_index, audio_pts, audio_time_base);
     
     ret = muxer.WriteTrailer();
     if(ret<0){
