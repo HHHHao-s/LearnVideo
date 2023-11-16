@@ -347,3 +347,21 @@ DAFCB       Sample Count:                     250 (0x000000FA)
 DAFCF       Sample Duration:                  512 (0x00000200)
 
 **Sample Duration/Time Scale = 512/128000 = 0.04秒**
+
+## 四、 协议
+
+### HLS(Http Live Streaming) 协议、TS流、M3U8文件
+
+[HLS specification](https://datatracker.ietf.org/doc/html/draft-pantos-http-live-streaming-23)
+
+[HLS 简介](https://zhuanlan.zhihu.com/p/608628539)
+
+[TS 文件格式](https://blog.csdn.net/andylao62/article/details/120019483)
+
+## 五、 SRS
+
+### 播放HLS
+
+使用http的端口播放（8080）m3u8文件，例如：`http://localhost:8080/live/livestream.m3u8`
+
+使用listen端口通过rtmp传输文件，例如：`ffmpeg -i test.mp4 -c copy -f flv rtmp://localhost:1935/live/livestream`
