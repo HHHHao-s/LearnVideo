@@ -365,3 +365,6 @@ DAFCF       Sample Duration:                  512 (0x00000200)
 使用http的端口播放（8080）m3u8文件，例如：`http://localhost:8080/live/livestream.m3u8`
 
 使用listen端口通过rtmp传输文件，例如：`ffmpeg -i test.mp4 -c copy -f flv rtmp://localhost:1935/live/livestream`
+
+### 推流rtmp 
+`ffmpeg -re -stream_loop -1 -i sync-aac.flv -f flv -c copy -flvflags no_duration_filesize rtmp://127.0.0.1:19353/live/stream`

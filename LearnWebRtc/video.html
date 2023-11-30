@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <video id="localVideo" autoplay playsinline muted></video>
+    <button id = "showVideo">打开摄像头</button>
+    <p>通过getUserMedia()获取视频</p>
+    
+</body>
+<script>
+    var localVideo = document.getElementById('localVideo');
+    var showVideo = document.getElementById('showVideo');
+    showVideo.onclick = function(){
+        navigator.mediaDevices.getUserMedia({
+            video:true,
+            audio:true
+        }).then(function(stream){
+            localVideo.srcObject = stream;
+        }).catch(function(err){
+            console.log(err);
+        })
+    }
+
+
+</script>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <audio id="localAudio" autoplay controls></audio>
+    <button id = "showAudio">打开麦克风</button>
+    <p>通过getUserMedia()获取音频</p>
+    
+</body>
+<script>
+    var localAudio = document.getElementById('localAudio');
+    var showAudio = document.getElementById('showAudio');
+    showAudio.onclick = function(){
+        navigator.mediaDevices.getUserMedia({
+            video:false,
+            audio:true
+        }).then(function(stream){
+            localAudio.srcObject = stream;
+        }).catch(function(err){
+            console.log(err);
+        })
+    }
+
+
+</script>
+</html>
