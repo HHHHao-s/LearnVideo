@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZRH WebRtc demo</title>
+</head>
+<body>
+<h1>ZRH WebRtc demo</h1>    
+<div>
+    <input type="text" id="roomId" placeholder="请输入要加入的房间">
+    <button id="JoinRoom">加入房间</button>
+    <button id="LeaveRoom">离开</button>
+</div>
+<div>
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+</div>
+</body>
+<script src="js/client.js"></script>
+</html>
