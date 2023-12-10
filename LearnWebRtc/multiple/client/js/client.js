@@ -1,7 +1,7 @@
 'use strict';
 
 var localVideo = document.getElementById('localVideo');
-var remoteVideo = document.querySelector('video#remoteVideo');
+var remoteVideo = document.getElementById('remoteVideo');
 
 var btnConn = document.querySelector('button#JoinRoom');
 var btnLeave = document.querySelector('button#LeaveRoom');
@@ -19,6 +19,7 @@ const SIGNAL_TYPE_CANDIDATE = "candidate";
 const SIGNAL_TYPE_LEAVE = "leave";
 
 var localUserId = Math.random().toString(36).slice(-8);
+var remoteUserId = null;
 var roomId = 0;
 
 function doJoin(roomId){
@@ -83,17 +84,33 @@ ZeroRTCEngine.prototype.sendMessage = function(msg) {
 
 ZeroRTCEngine.prototype.handleRespJoin = function(msg){
         console.log('handleRespJoin: ' + JSON.stringify(msg));
-        var remoteIds = msg.remoteIds;
-        for(var i=0; i<remoteIds.length; i++){
-                var remoteId = remoteIds[i];
-                doOffer(remoteId);
+        var msgremoteId = msg.remoteId;
+        if(msgremoteId != null){
+                remoteUserId = msgremoteId;
         }
 }
+
+function doOffer(remoteId){
+        console.log('doOffer: ' + remoteId);
+}
+
+
+
+
 
 ZeroRTCEngine.prototype.handleNewPeer = function(msg){
         console.log('handleNewPeer: ' + JSON.stringify(msg));
         var remoteId = msg.uid;
+        remoteUserId = remoteId;
         doOffer(remoteId);
+}
+
+ZeroRTCEngine.prototype.handlePeerLeave = function(msg){
+        console.log('handlePeerLeave: ' + JSON.stringify(msg));
+        var remoteId = msg.uid;
+        remoteUserId = null;
+        remoteVideo.srcObject = null;
+
 }
 
 ZeroRTCEngine.prototype.onMessage = function(event) {
@@ -133,6 +150,7 @@ ZeroRTCEngine.prototype.onClose = function(event) {
 
 ZeroRTCEngine.prototype.onOpen = function() {
         console.log('onOpen');
+        
 }
 
 ZeroRTCEngine.prototype.onError = function(event) {
@@ -174,7 +192,7 @@ btnConn.onclick = function () {
                 doJoin(roomId);
         }
         // 初始化本地码流
-        initLocalStream();
+        // initLocalStream();
 }
 
 function doLeave(){

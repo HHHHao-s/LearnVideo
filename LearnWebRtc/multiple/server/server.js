@@ -10,141 +10,138 @@ const SIGNAL_TYPE_ANSWER = "answer";
 const SIGNAL_TYPE_CANDIDATE = "candidate";
 const SIGNAL_TYPE_LEAVE = "leave";
 
-var roomTableMap = new Map();
-var connMap = new Map();
-var uidMap = new Map();
+roomTableMap = new Map();
 
-class Client {
-    constructor(uid, conn, roomId) {
+class Client{
+    constructor(uid, conn, roomId){
+        
         this.uid = uid;
-        this.conn = conn;
+        this.conn = conn
         this.roomId = roomId;
     }
 }
 
-function handleJoin(conn, msg){
-    
-    var roomId = msg.roomId;
-    var uid = msg.uid;
+function handleJoin(jsonMsg, conn){
 
-    client = new Client(uid, conn, roomId);
-    connMap.set(conn, uid);
-    uidMap.set(uid, client);
-    
-    console.log("handleJoin: "+uid+" join room "+roomId);
-    roomMap = roomTableMap.get(roomId);
-    if (roomMap == null){
-        roomMap = new Map();
-        roomTableMap.set(roomId, roomMap);
+    roomId = jsonMsg.roomId;
+    uid = jsonMsg.uid;
+
+
+    var roomTable = roomTableMap.get(roomId);
+    if(roomTable == null){
+        roomTable = new Map();
+        
     }
-    roomMap.set(uid, client);
-    remoteIds = [];
-    if(roomMap.size > 1){
-        // 告知房间里的其他人有新人加入
-        var newPeerMsg = {
-            'cmd': SIGNAL_TYPE_NEW_PEER,
-            'uid': uid
-        };
-        for (var [key, value] of roomMap) {
-            if (key != uid){
-                value.conn.sendText(JSON.stringify(newPeerMsg));
-                remoteIds.push(key);
-            }
-        }
+    if(roomTable.size >=2){
+        // room is full
+        // add new signal to support multi-peer
+        return ;
     }
+    var client = new Client(uid, conn, roomId);
+    roomTable.set(uid, client);
+    roomTableMap.set(roomId, roomTable);
+        
     
-    // 告知加入者对方有谁
-    var respMsg = {
-        'cmd': SIGNAL_TYPE_RESP_JOIN,
-        'remoteIds': remoteIds
-    };
-
-    console.log("respMsg: "+JSON.stringify(respMsg));
     
-    conn.sendText(JSON.stringify(respMsg));
-}
+    if(roomTable.size > 1){
+        console.log("room is 1");
+        var clients = roomTable.values();
+        for(var client of clients){
+            // console.log("client "+client.uid);
 
-function handleLeave(uid){
-    console.log("handleLeave: "+uid);
-    client = uidMap.get(uid);
-
-    if (client != null){
-        roomMap = roomTableMap.get(client.roomId);
-        if (roomMap != null){
-            roomMap.delete(uid);
-            if (roomMap.size == 0){
-                roomTableMap.delete(client.roomId);
-            }else{
-                // 告知房间里的其他人有人离开
-                var peerLeaveMsg = {
-                    'cmd': SIGNAL_TYPE_PEER_LEAVE,
-                    'uid': uid
-                };
-                for (var [key, value] of roomMap) {
-                    value.conn.sendText(JSON.stringify(peerLeaveMsg));
+            if(client.uid == uid){
+                var respMsgtoCur = {
+                    "cmd": SIGNAL_TYPE_RESP_JOIN,
+                    "remoteUid": client.uid
                 }
+                conn.sendText(JSON.stringify(respMsgtoCur));
+                continue;
             }
+            var respMsg = {
+                "cmd": SIGNAL_TYPE_NEW_PEER,
+                "uid": uid
+            }
+            
+            client.conn.sendText(JSON.stringify(respMsg));
+            
         }
+    }else{
+        console.log("room is empty");
+        var respMsg = {
+            "cmd": SIGNAL_TYPE_RESP_JOIN,
+            "remoteUid": null
+        }
+        conn.sendText(JSON.stringify(respMsg));
     }
-    connMap.delete(client.conn);
-    uidMap.delete(uid);
-    
 
-    
-    
+
 }
 
-function handleClose(conn){
-    uid = connMap.get(conn);
-    client = uidMap.get(uid);
-    if (client != null){
-        roomId= client.roomId; 
-        roomMap = roomTableMap.get(roomId);
-        if (roomMap != null){
-            roomMap.delete(uid);
-            if (roomMap.size == 0){
-                roomTableMap.delete(roomId);
-            }else{
-                // 告知房间里的其他人有人离开
-                var peerLeaveMsg = {
-                    'cmd': SIGNAL_TYPE_PEER_LEAVE,
-                    'uid': client.uid
-                };
-                for (var [key, value] of roomMap) {
-                    value.conn.sendText(JSON.stringify(peerLeaveMsg));
-                }
-            }
-        }
+function handleLeave(jsonMsg, conn){
+    uid = jsonMsg.uid;
+    roomId = jsonMsg.roomId;
+    var roomTable = roomTableMap.get(roomId);
+    if(roomTable == null){
+        console.log("roomTable is null");
+        return;
     }
-    uidMap.delete(uid);
-    connMap.delete(conn);
-    console.log("handleClose: "+uid);
+    var client = roomTable.get(uid);
+    if(client == null){
+        console.log("client is null");
+        return;
+    }
+    roomTable.delete(uid);
+    roomTableMap.set(roomId, roomTable);
+    if(roomTable.size > 0){
+        var clients = roomTable.values();
+        var respMsg = {
+            "cmd": SIGNAL_TYPE_PEER_LEAVE,
+            "uid": uid
+        }
+        respMsgjson = JSON.stringify(respMsg);
+        for(var client of clients){
+            
+            client.conn.sendText(respMsgjson);
+        }
+    }else if(roomTable.size == 0){
+        roomTableMap.delete(roomId);
+    }
 }
+
+
 
 var server = ws.createServer(function(conn){
-    console.log("New connection")
-    conn.sendText("Hello world")
+
+    console.log("New connection");
+   
     conn.on("text", function (str) {
-        console.log("Received "+str)
-        var msg = JSON.parse(str);
-        switch (msg.cmd){
-            case SIGNAL_TYPE_JOIN:
-                handleJoin(conn, msg);
-                break;
-            case SIGNAL_TYPE_LEAVE:
-                handleLeave(msg.uid);
-                break;
-        }
-    });
-    conn.on("close", function (code, reason) {
-        console.log("Connection closed:" + code+" "+reason)
-        handleClose(conn);
         
+        console.log("Received "+str);
+
+        var jsonMsg = JSON.parse(str);
+        var cmd = jsonMsg.cmd;
+        switch(cmd){
+            case SIGNAL_TYPE_JOIN:{
+                handleJoin(jsonMsg, conn);
+                
+                break;
+            }
+            case SIGNAL_TYPE_LEAVE:{
+                handleLeave(jsonMsg, conn);
+                break;
+            }
+        }
+
+    });
+    
+
+    conn.on("close", function (code, reason) {
+        console.log("Connection closed");
     });
 
     conn.on("error", function (err) {
-        console.log("handle err")
-        console.log(err)
-    });
-}).listen(port);
+        console.log("handle err");
+        console.log(err);
+    }); 
 
+}).listen(port);
