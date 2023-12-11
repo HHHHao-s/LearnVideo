@@ -44,7 +44,7 @@ function handleJoin(jsonMsg, conn){
     
     
     if(roomTable.size > 1){
-        console.log("room is 1");
+        console.log("room is 2");
         var clients = roomTable.values();
         for(var client of clients){
             // console.log("client "+client.uid);
@@ -108,7 +108,90 @@ function handleLeave(jsonMsg, conn){
     }
 }
 
+function handleOffer(jsonMsg, conn){
 
+    console.log("handleOffer");
+    uid = jsonMsg.uid;
+    roomId = jsonMsg.roomId;
+    var roomTable = roomTableMap.get(roomId);
+    if(roomTable == null){
+        console.log("roomTable is null");
+        return;
+    }
+    var client = roomTable.get(uid);
+    if(client == null){
+        console.log("client is null");
+        return;
+    }
+    var remoteId = jsonMsg.remoteId;
+    var remoteClient = roomTable.get(remoteId);
+    if(remoteClient == null){
+        console.log("remoteClient is null");
+        return;
+    }
+    var respMsg = {
+        "cmd": SIGNAL_TYPE_OFFER,
+        "uid": uid,
+        "offer": jsonMsg.offer
+    };
+    remoteClient.conn.sendText(JSON.stringify(respMsg));
+}
+
+function handleAnswer(jsonMsg, conn){
+    console.log("handleAnswer");
+    uid = jsonMsg.uid;
+    roomId = jsonMsg.roomId;
+    var roomTable = roomTableMap.get(roomId);
+    if(roomTable == null){
+        console.log("roomTable is null");
+        return;
+    }
+    var client = roomTable.get(uid);
+    if(client == null){
+        console.log("client is null");
+        return;
+    }
+    var remoteId = jsonMsg.remoteId;
+    var remoteClient = roomTable.get(remoteId);
+    if(remoteClient == null){
+        console.log("remoteClient is null");
+        return;
+    }
+    var respMsg = {
+        "cmd": SIGNAL_TYPE_ANSWER,
+        "uid": uid,
+        "answer": jsonMsg.answer
+    };
+    remoteClient.conn.sendText(JSON.stringify(respMsg));
+}
+
+function handleCandidate(jsonMsg, conn){
+    console.log("handleCandidate");
+    uid = jsonMsg.uid;
+    roomId = jsonMsg.roomId;
+    var roomTable = roomTableMap.get(roomId);
+    if(roomTable == null){
+        console.log("roomTable is null");
+        return;
+    }
+    var client = roomTable.get(uid);
+    if(client == null){
+        console.log("client is null");
+        return;
+    }
+    var remoteId = jsonMsg.remoteId;
+    var remoteClient = roomTable.get(remoteId);
+    if(remoteClient == null){
+        console.log("remoteClient is null");
+        return;
+    }
+    var respMsg = {
+        "cmd": SIGNAL_TYPE_CANDIDATE,
+        "uid": uid,
+        "candidate": jsonMsg.candidate
+    };
+    remoteClient.conn.sendText(JSON.stringify(respMsg));
+}
 
 var server = ws.createServer(function(conn){
 
@@ -130,6 +213,21 @@ var server = ws.createServer(function(conn){
                 handleLeave(jsonMsg, conn);
                 break;
             }
+            case SIGNAL_TYPE_OFFER:{
+                handleOffer(jsonMsg, conn);
+                break;
+            }
+            case SIGNAL_TYPE_ANSWER:{
+                handleAnswer(jsonMsg, conn);
+                break;
+            }
+            case SIGNAL_TYPE_CANDIDATE:{
+                handleCandidate(jsonMsg, conn);
+                break;
+            }
+            default:
+                break;
+
         }
 
     });

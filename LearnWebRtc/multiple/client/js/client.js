@@ -7,7 +7,7 @@ var btnConn = document.querySelector('button#JoinRoom');
 var btnLeave = document.querySelector('button#LeaveRoom');
 
 var localStream;
-
+var pc;
 
 const SIGNAL_TYPE_JOIN = "join";
 const SIGNAL_TYPE_RESP_JOIN = "resp-join"; // 告知加入者对方是谁
@@ -22,23 +22,21 @@ var localUserId = Math.random().toString(36).slice(-8);
 var remoteUserId = null;
 var roomId = 0;
 
-function doJoin(roomId){
+async function doJoin(roomId){
+        // 异步等待本地流初始化完成
+        await initLocalStream();
+
         var jsonMsg = {
                 'cmd': SIGNAL_TYPE_JOIN,
                 'roomId': roomId,
                 'uid'   : localUserId
         };
-        zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
         console.log('doJoin: ' + JSON.stringify(jsonMsg));
-}
-
-function openLocalStream(stream) {
-        console.log('openLocalStream');
+        zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
         
-
-        localVideo.srcObject = stream;
-        localStream = stream;
 }
+
+
 
 var zeroRTCEngine;
 
@@ -90,12 +88,135 @@ ZeroRTCEngine.prototype.handleRespJoin = function(msg){
         }
 }
 
+function createPeerConnection() {
+        console.log('createPeerConnection');
+        pc = new RTCPeerConnection();
+
+        pc.onicecandidate = function(event) {
+                if (event.candidate) {
+                        console.log(event.candidate);
+                        console.log(JSON.stringify(event.candidate));
+                        var jsonMsg = {
+                                'cmd': SIGNAL_TYPE_CANDIDATE,
+                                'roomId': roomId,
+                                'uid'   : localUserId,
+                                'candidate': event.candidate,
+                                'remoteId': remoteUserId
+                        };
+                        zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
+                        console.log('createPeerConnection: ' + JSON.stringify(jsonMsg));
+                }else{
+                        console.log('End of candidates.');
+                }
+        
+        }
+
+        pc.ontrack = function(event) {
+                console.log('ontrack');
+                remoteVideo.srcObject = event.streams[0];
+
+        }
+
+        pc.onremovestream = function(event) {
+                console.log('onremovestream');
+                zeroRTCEngine.emit('onRemoveRemoteStream', event.streams[0]);
+        }
+
+        localStream.getTracks().forEach(function(track) {
+                pc.addTrack(track, localStream);
+        });
+
+}
+
+function setDescAndSendOffer(offer){
+
+        pc.setLocalDescription(offer);
+        console.log(offer);
+
+        var jsonMsg = {
+                'cmd': SIGNAL_TYPE_OFFER,
+                'roomId': roomId,
+                'uid'   : localUserId,
+                'offer': offer,
+                'remoteId': remoteUserId
+
+        };
+        zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
+        console.log('setDescAndSendOffer: ' + JSON.stringify(jsonMsg));
+
+}
+
 function doOffer(remoteId){
         console.log('doOffer: ' + remoteId);
+
+        createPeerConnection();
+
+        pc.createOffer().then(setDescAndSendOffer).catch(function(err) {
+                console.log(err);
+        
+        });
+
+}
+
+function setDescAndSendAnswer(Answer){
+
+        pc.setLocalDescription(Answer);
+        console.log(Answer);
+        console.log(JSON.stringify(Answer));
+        var jsonMsg = {
+                'cmd': SIGNAL_TYPE_ANSWER,
+                'roomId': roomId,
+                'uid'   : localUserId,
+                'answer': Answer,
+                'remoteId': remoteUserId
+
+        };
+        zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
+        console.log('setDescAndSendOffer: ' + JSON.stringify(jsonMsg));
+
+}
+
+function doAnswer(remoteId){
+        console.log('doOffer: ' + remoteId);
+
+
+        pc.createAnswer().then(setDescAndSendAnswer).catch(function(err) {
+                console.log(err);
+        
+        });
+
 }
 
 
+ZeroRTCEngine.prototype.handleOffer = function(msg){
 
+        var offer = msg.offer;
+        remoteUserId = msg.uid;
+        console.log('handleOffer: ' + JSON.stringify(msg));
+        createPeerConnection();
+        pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+        doAnswer(remoteUserId);
+
+}
+
+ZeroRTCEngine.prototype.handleAnswer= function(msg){
+        console.log('handleAnswer: ' + JSON.stringify(msg));
+        var answer = msg.answer;
+        pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+}
+
+ ZeroRTCEngine.prototype.handleCandidate = function(msg){
+        console.log('handleCandidate: ' + JSON.stringify(msg));
+        var candidate = msg.candidate;
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(function(err) {
+                console.log(err);
+        
+        });
+
+
+}
 
 
 ZeroRTCEngine.prototype.handleNewPeer = function(msg){
@@ -168,15 +289,15 @@ function initZeroRTCEngine() {
         });
 }
 
-function initLocalStream() {
-        navigator.mediaDevices.getUserMedia({
+async function initLocalStream() {
+        let response = await  navigator.mediaDevices.getUserMedia({
             audio: true,
                 video: true  
-        })
-        .then(openLocalStream)
-        .catch(function(e) {
-                alert('getUserMedia() error: ' + e.name);
         });
+        localStream = response;
+        localVideo.srcObject = localStream;
+        console.log('initLocalStream');
+        
 }
 
 zeroRTCEngine = new ZeroRTCEngine('ws://localhost:8099');
@@ -185,14 +306,18 @@ zeroRTCEngine.createSignaling();
 btnConn.onclick = function () {
         console.log('Join Room');
         roomId = document.getElementById('roomId').value;
+        // 初始化本地码流
+        
         if(roomId == null || roomId == ''){
                 alert('请输入房间号');
                 return;
         }else{
+                
+                
                 doJoin(roomId);
+                
         }
-        // 初始化本地码流
-        // initLocalStream();
+        
 }
 
 function doLeave(){
