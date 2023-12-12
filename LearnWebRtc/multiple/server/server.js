@@ -12,6 +12,8 @@ const SIGNAL_TYPE_LEAVE = "leave";
 
 roomTableMap = new Map();
 
+connMap=new Map();
+
 class Client{
     constructor(uid, conn, roomId){
         
@@ -41,7 +43,7 @@ function handleJoin(jsonMsg, conn){
     roomTable.set(uid, client);
     roomTableMap.set(roomId, roomTable);
         
-    
+    connMap.set(conn, client);
     
     if(roomTable.size > 1){
         console.log("room is 2");
@@ -92,6 +94,7 @@ function handleLeave(jsonMsg, conn){
     }
     roomTable.delete(uid);
     roomTableMap.set(roomId, roomTable);
+    connMap.delete(conn);
     if(roomTable.size > 0){
         var clients = roomTable.values();
         var respMsg = {
@@ -235,6 +238,35 @@ var server = ws.createServer(function(conn){
 
     conn.on("close", function (code, reason) {
         console.log("Connection closed");
+        var client = connMap.get(conn);
+    
+        if(client == null){
+            return;
+        }
+        uid = client.uid;
+        roomId = client.roomId;
+        var roomTable = roomTableMap.get(roomId);
+        if(roomTable == null){
+            console.log("roomTable is null");
+            return;
+        }
+        roomTable.delete(uid);
+        roomTableMap.set(roomId, roomTable);
+        connMap.delete(conn);
+        if(roomTable.size > 0){
+            var clients = roomTable.values();
+            var respMsg = {
+                "cmd": SIGNAL_TYPE_PEER_LEAVE,
+                "uid": uid
+            }
+            respMsgjson = JSON.stringify(respMsg);
+            for(var client of clients){
+                
+                client.conn.sendText(respMsgjson);
+            }
+        }else if(roomTable.size == 0){
+            roomTableMap.delete(roomId);
+        }
     });
 
     conn.on("error", function (err) {

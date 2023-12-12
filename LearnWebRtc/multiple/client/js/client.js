@@ -90,7 +90,24 @@ ZeroRTCEngine.prototype.handleRespJoin = function(msg){
 
 function createPeerConnection() {
         console.log('createPeerConnection');
-        pc = new RTCPeerConnection();
+
+        var defaultConfigurations = {
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                iceTransportPolicy: 'relay',
+                iceServers:[
+                        {
+                                urls: [
+                                        "turn:47.236.111.105:3478?transport=udp",
+                                        "turn:47.236.111.105:3478?transport=tcp"
+                                ],
+                                username: "admin",
+                                credential: "123456"
+                        }
+                ]
+        };
+
+        pc = new RTCPeerConnection(defaultConfigurations);
 
         pc.onicecandidate = function(event) {
                 if (event.candidate) {
@@ -234,6 +251,21 @@ ZeroRTCEngine.prototype.handlePeerLeave = function(msg){
 
 }
 
+ZeroRTCEngine.prototype.handleLeave = function(msg){   
+
+        console.log('handleLeave: ' + JSON.stringify(msg));
+        remoteVideo.srcObject = null;
+        remoteUserId = null;
+        if(pc!=null){
+                pc.close();
+                pc = null;
+        
+        }
+
+}
+
+
+
 ZeroRTCEngine.prototype.onMessage = function(event) {
         console.log('onMessage'+event.data);
         var msg = JSON.parse(event.data);
@@ -320,6 +352,15 @@ btnConn.onclick = function () {
         
 }
 
+function closeLocalStream() {
+        if (localStream && localStream.getTracks()) {
+                localStream.getTracks().forEach((track) => {
+                        track.stop();
+                });
+        }
+        localStream = null;
+}
+
 function doLeave(){
         var jsonMsg = {
                 'cmd': SIGNAL_TYPE_LEAVE,
@@ -328,6 +369,13 @@ function doLeave(){
         };
         zeroRTCEngine.sendMessage(JSON.stringify(jsonMsg));
         console.log('doLeave: ' + JSON.stringify(jsonMsg));
+        closeLocalStream();
+        if(pc!=null){
+                pc.close();
+                pc = null;
+        
+        }
+        
 
 }
 
