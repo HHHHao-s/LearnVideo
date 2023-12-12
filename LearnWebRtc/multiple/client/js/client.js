@@ -332,7 +332,7 @@ async function initLocalStream() {
         
 }
 
-zeroRTCEngine = new ZeroRTCEngine('ws://localhost:8099');
+zeroRTCEngine = new ZeroRTCEngine('ws://47.236.111.105:8099');
 zeroRTCEngine.createSignaling();
 
 btnConn.onclick = function () {

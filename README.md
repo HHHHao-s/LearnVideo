@@ -374,3 +374,8 @@ DAFCF       Sample Duration:                  512 (0x00000200)
 
 ### ICE
 ![webRTC_ice](README/webrtc_ice.png)
+
+### 打开coturn和singal服务器
+
+`turnserver -c /root/turnserver.conf`
+`node LearnWebRtc/multiple/server/server.js`
