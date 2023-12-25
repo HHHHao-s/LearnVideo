@@ -379,3 +379,810 @@ DAFCF       Sample Duration:                  512 (0x00000200)
 
 `turnserver -c /root/turnserver.conf`
 `node LearnWebRtc/multiple/server/server.js`
+
+### janus
+
+[Janus](https://janus.conf.meetecho.com/docs/)
+
+#### 发现的问题
+
+janus 的videoroom插件在attach时不会接收candidate，怀疑直接使用sdp的ip地址
+
+设置janus服务端的stun服务器后janus发回的sdp如下，有一个srflx类型的candidate
+
+```
+v=0
+o=- 2077340275299469257 2 IN IP4 47.236.111.105
+s=VideoRoom 1234
+t=0 0
+a=group:BUNDLE 0 1
+a=ice-options:trickle
+a=fingerprint:sha-256 CD:BC:F8:83:5B:5E:5D:7F:5D:41:7B:DF:91:1C:D5:25:5D:AE:B2:D7:8D:A1:E6:74:CE:09:72:90:E7:12:FD:A4
+a=extmap-allow-mixed
+a=msid-semantic: WMS *
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 47.236.111.105
+a=recvonly
+a=mid:0
+a=rtcp-mux
+a=ice-ufrag:saYH
+a=ice-pwd:7PsJRtq9vFeA5HFeeIddBx
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 useinbandfec=1
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=msid:janus janus0
+a=ssrc:2815377430 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 51267 typ host
+a=candidate:2 1 udp 1679819007 47.236.111.105 51267 typ srflx raddr 172.17.10.191 rport 51267
+a=end-of-candidates
+m=video 9 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 47.236.111.105
+a=recvonly
+a=mid:1
+a=rtcp-mux
+a=ice-ufrag:saYH
+a=ice-pwd:7PsJRtq9vFeA5HFeeIddBx
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=extmap:13 urn:3gpp:video-orientation
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+a=msid:janus janus1
+a=ssrc:692893090 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 51267 typ host
+a=candidate:2 1 udp 1679819007 47.236.111.105 51267 typ srflx raddr 172.17.10.191 rport 51267
+a=end-of-candidates
+```
+
+关闭stun服务器后，janus发回的sdp如下，没有srflx类型的candidate，且ip地址为内网地址
+
+```
+v=0
+o=- 1456016224506848041 2 IN IP4 172.17.10.191
+s=VideoRoom 1234
+t=0 0
+a=group:BUNDLE 0 1
+a=ice-options:trickle
+a=fingerprint:sha-256 5E:20:5A:34:AE:29:B1:DD:5E:9F:C2:22:FC:91:12:10:10:95:99:F3:47:D2:BF:24:DC:78:C5:C1:F2:AC:70:44
+a=extmap-allow-mixed
+a=msid-semantic: WMS *
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 172.17.10.191
+a=recvonly
+a=mid:0
+a=rtcp-mux
+a=ice-ufrag:dDZ6
+a=ice-pwd:P0IuEvH3YfF59ERxuE4qbl
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 useinbandfec=1
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=msid:janus janus0
+a=ssrc:2788979193 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 51572 typ host
+a=end-of-candidates
+m=video 9 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 172.17.10.191
+a=recvonly
+a=mid:1
+a=rtcp-mux
+a=ice-ufrag:dDZ6
+a=ice-pwd:P0IuEvH3YfF59ERxuE4qbl
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=extmap:13 urn:3gpp:video-orientation
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+a=msid:janus janus1
+a=ssrc:765158755 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 51572 typ host
+a=end-of-candidates
+```
+
+在配置文件`janus.jcfg`中找到这段话
+
+>Furthermore, you can choose whether Janus should be configured to do full-trickle (Janus also trickles its candidates to users) rather than the default half-trickle (Janus supports trickle candidates from users, but sends its own within the SDP), and whether it should work in ICE-Lite mode (by default it doesn't).
+
+尝试修改`full-trickle`为`true`，并配置stun服务器，效果如下
+
+```
+v=0
+o=- 2238517461886594705 2 IN IP4 47.236.111.105
+s=VideoRoom 1234
+t=0 0
+a=group:BUNDLE 0 1
+a=ice-options:trickle
+a=fingerprint:sha-256 B2:04:FF:48:83:21:21:AC:4C:1A:15:27:56:CA:32:CA:96:1F:AF:10:DF:EC:BE:70:83:39:69:AA:99:46:3D:2E
+a=extmap-allow-mixed
+a=msid-semantic: WMS *
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 47.236.111.105
+a=recvonly
+a=mid:0
+a=rtcp-mux
+a=ice-ufrag:LQeb
+a=ice-pwd:CPM6wyfahRM7ZhqqJUmfYO
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 useinbandfec=1
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=msid:janus janus0
+a=ssrc:1072793273 cname:janus
+m=video 9 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 47.236.111.105
+a=recvonly
+a=mid:1
+a=rtcp-mux
+a=ice-ufrag:LQeb
+a=ice-pwd:CPM6wyfahRM7ZhqqJUmfYO
+a=ice-options:trickle
+a=setup:active
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=extmap:13 urn:3gpp:video-orientation
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+a=msid:janus janus1
+a=ssrc:2096047487 cname:janus
+```
+
+同时接收到candidate：
+
+```
+candidate:1 1 udp 2015363327 172.17.10.191 39746 typ host
+
+candidate:2 1 udp 1679819007 47.236.111.105 44183 typ srflx raddr 172.17.10.191 rport 44183
+```
+
+表明full-trickle为true时，janus会通过一个别的方式发送自己的candidate，而不是放在sdp里，half-trickle是旧版本的方式，full-trickle是新版本的方式，但是浏览器会兼容旧版本的方式。
+
+#### 附浏览器向服务器发送的sdp
+
+```
+v=0
+o=- 3669063131454860966 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=msid-semantic: WMS 03c7022e-17e3-4714-8776-c714e8c10b54
+m=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:vJzz
+a=ice-pwd:f7t71vaBr10FPUhiQ1sSmaHT
+// ICE候选（candidates）逐个地被收集并发送，而不是等待所有的ICE候选都被收集完毕后再一次性发送。
+a=ice-options:trickle
+a=fingerprint:sha-256 D0:B5:88:F6:F1:F1:E5:52:15:2C:6D:18:83:08:86:62:66:19:73:88:33:59:3E:0D:80:FD:B8:B2:F9:A4:95:2D
+a=setup:actpass
+// media stream id
+a=mid:0
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=sendonly
+a=msid:03c7022e-17e3-4714-8776-c714e8c10b54 c4203efc-e7a5-4d6a-8eb2-ffb6b9172748
+a=rtcp-mux
+a=rtpmap:111 opus/48000/2
+a=rtcp-fb:111 transport-cc
+a=fmtp:111 minptime=10;useinbandfec=1
+// 可供选择的使用RED FEC机制传输媒体，但是从服务器返回的sdp中可见，服务器并没有选择使用RED FEC机制
+a=rtpmap:63 red/48000/2
+a=fmtp:63 111/111
+a=rtpmap:9 G722/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:13 CN/8000
+a=rtpmap:110 telephone-event/48000
+a=rtpmap:126 telephone-event/8000
+a=ssrc:1073232550 cname:fZJoE+wdrHBTbX8n
+a=ssrc:1073232550 msid:03c7022e-17e3-4714-8776-c714e8c10b54 c4203efc-e7a5-4d6a-8eb2-ffb6b9172748
+m=video 9 UDP/TLS/RTP/SAVPF 96 97 102 103 104 105 106 107 108 109 127 125 39 40 45 46 98 99 100 101 112 113 116 117 118
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:vJzz
+a=ice-pwd:f7t71vaBr10FPUhiQ1sSmaHT
+a=ice-options:trickle
+a=fingerprint:sha-256 D0:B5:88:F6:F1:F1:E5:52:15:2C:6D:18:83:08:86:62:66:19:73:88:33:59:3E:0D:80:FD:B8:B2:F9:A4:95:2D
+a=setup:actpass
+a=mid:1
+a=extmap:14 urn:ietf:params:rtp-hdrext:toffset
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:13 urn:3gpp:video-orientation
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type
+a=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing
+a=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id
+a=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id
+a=sendonly
+a=msid:03c7022e-17e3-4714-8776-c714e8c10b54 b200839d-8f25-40f2-9dfc-6adcff9d793f
+a=rtcp-mux
+a=rtcp-rsize
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+a=rtpmap:102 H264/90000
+a=rtcp-fb:102 goog-remb
+a=rtcp-fb:102 transport-cc
+a=rtcp-fb:102 ccm fir
+a=rtcp-fb:102 nack
+a=rtcp-fb:102 nack pli
+a=fmtp:102 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
+a=rtpmap:103 rtx/90000
+a=fmtp:103 apt=102
+a=rtpmap:104 H264/90000
+a=rtcp-fb:104 goog-remb
+a=rtcp-fb:104 transport-cc
+a=rtcp-fb:104 ccm fir
+a=rtcp-fb:104 nack
+a=rtcp-fb:104 nack pli
+a=fmtp:104 level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42001f
+a=rtpmap:105 rtx/90000
+a=fmtp:105 apt=104
+a=rtpmap:106 H264/90000
+a=rtcp-fb:106 goog-remb
+a=rtcp-fb:106 transport-cc
+a=rtcp-fb:106 ccm fir
+a=rtcp-fb:106 nack
+a=rtcp-fb:106 nack pli
+a=fmtp:106 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f
+a=rtpmap:107 rtx/90000
+a=fmtp:107 apt=106
+a=rtpmap:108 H264/90000
+a=rtcp-fb:108 goog-remb
+a=rtcp-fb:108 transport-cc
+a=rtcp-fb:108 ccm fir
+a=rtcp-fb:108 nack
+a=rtcp-fb:108 nack pli
+a=fmtp:108 level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42e01f
+a=rtpmap:109 rtx/90000
+a=fmtp:109 apt=108
+a=rtpmap:127 H264/90000
+a=rtcp-fb:127 goog-remb
+a=rtcp-fb:127 transport-cc
+a=rtcp-fb:127 ccm fir
+a=rtcp-fb:127 nack
+a=rtcp-fb:127 nack pli
+a=fmtp:127 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d001f
+a=rtpmap:125 rtx/90000
+a=fmtp:125 apt=127
+a=rtpmap:39 H264/90000
+a=rtcp-fb:39 goog-remb
+a=rtcp-fb:39 transport-cc
+a=rtcp-fb:39 ccm fir
+a=rtcp-fb:39 nack
+a=rtcp-fb:39 nack pli
+a=fmtp:39 level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=4d001f
+a=rtpmap:40 rtx/90000
+a=fmtp:40 apt=39
+a=rtpmap:45 AV1/90000
+a=rtcp-fb:45 goog-remb
+a=rtcp-fb:45 transport-cc
+a=rtcp-fb:45 ccm fir
+a=rtcp-fb:45 nack
+a=rtcp-fb:45 nack pli
+a=rtpmap:46 rtx/90000
+a=fmtp:46 apt=45
+a=rtpmap:98 VP9/90000
+a=rtcp-fb:98 goog-remb
+a=rtcp-fb:98 transport-cc
+a=rtcp-fb:98 ccm fir
+a=rtcp-fb:98 nack
+a=rtcp-fb:98 nack pli
+a=fmtp:98 profile-id=0
+a=rtpmap:99 rtx/90000
+a=fmtp:99 apt=98
+a=rtpmap:100 VP9/90000
+a=rtcp-fb:100 goog-remb
+a=rtcp-fb:100 transport-cc
+a=rtcp-fb:100 ccm fir
+a=rtcp-fb:100 nack
+a=rtcp-fb:100 nack pli
+a=fmtp:100 profile-id=2
+a=rtpmap:101 rtx/90000
+a=fmtp:101 apt=100
+a=rtpmap:112 H264/90000
+a=rtcp-fb:112 goog-remb
+a=rtcp-fb:112 transport-cc
+a=rtcp-fb:112 ccm fir
+a=rtcp-fb:112 nack
+a=rtcp-fb:112 nack pli
+a=fmtp:112 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=64001f
+a=rtpmap:113 rtx/90000
+a=fmtp:113 apt=112
+a=rtpmap:116 red/90000
+a=rtpmap:117 rtx/90000
+a=fmtp:117 apt=116
+a=rtpmap:118 ulpfec/90000
+a=ssrc-group:FID 4108419990 4041802237
+a=ssrc:4108419990 cname:fZJoE+wdrHBTbX8n
+a=ssrc:4108419990 msid:03c7022e-17e3-4714-8776-c714e8c10b54 b200839d-8f25-40f2-9dfc-6adcff9d793f
+a=ssrc:4041802237 cname:fZJoE+wdrHBTbX8n
+a=ssrc:4041802237 msid:03c7022e-17e3-4714-8776-c714e8c10b54 b200839d-8f25-40f2-9dfc-6adcff9d793f
+```
+
+### sdp详解
+
+```
+1 // ===============================================
+2 // SDP 会话描述
+3 // ===============================================
+4 // 版本信息
+5 v=0
+6 // 会话的创建者
+7 o=- 8567802084787497323 2 IN IP4 127.0.0.1
+8 // 会话名
+9 s=-
+10 // 会话时长
+11 t=0 0
+12 // 音视频传输采用多路复用方式， 通过同一个通道传输
+13 // 这样可以减少对ICE 资源的消耗
+14 a=group:BUNDLE 0 1
+15 //WMS(WebRTC Media Stream)
+16 // 因为上面的BUNDLE 使得音视频可以复用传输通道
+17 // 所以WebRTC 定义一个媒体流来对音视频进行统一描述
+18 // 媒体流中可以包含多路轨（ 音频轨、视频轨… … )
+19 // 每个轨对应一个SSRC
+20 a=msid -semantic: WM S 3eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt
+21 // ===============================================
+22 // 音视频媒体描述
+23 // ===============================================
+24 // 音频媒体描述
+25 // 端口9 忽略， 端口设置为0 表示不传输音频
+26 m=audio 9 UDP/TLS/RTP/SAVPF 111 103 104 9 0 8 106 105 13 110 112 113 126
+27 // 网络描述, 忽略!WebRTC 不使用该属性
+28 c=IN IP4 0.0.0.0
+29 // 忽略!WebRTC 不使用该属性
+30 a=rtcp:9 IN IP4 0.0.0.0
+31 // 用于ICE 有效用户的验证
+32 // ufrag 表示用户名( 随机值)
+33 a=ice -ufrag:r8+X
+34 // 密码
+35 a=ice -pwd:MdLpm2pegfysJ/VMCCGtZRpF
+36 // 收信candidate 方式
+37 a=ice -options:trickle
+38 // 证书指纹， 用于验证DTLS 证书有效性
+39 a=fingerprint:sha -256 53:08:1A:66:24: C7 :45:31:0A:EA:9E:59:97: A9 :15:3A:EC :60:1F:85:85:5B:B8:EC:D4 :77:78:9A:46:09:03:2A
+40 // 用于指定DTLS 用户角色
+41 a=setup:actpass
+42 // BUNDLE 使用， 0 表示音频
+43 a=mid:0
+44 // 音频传输时RTP 支持的扩展头
+45 // 发送端是否音频level 扩展， 可参考RFC6464
+46 a=extmap :1 urn:ietf:params:rtp -hdrext:ssrc -audio -level
+47 //NTP 时间扩展头
+48 a=extmap :2 http://www.webrtc.org/experiments/rtp -hdrext/abs -send -time
+49 //transport -CC 的扩展头
+50 a=extmap :3 http://www.ietf.org/id/draft -holmer -rmcat -transport -wide -cc -extensions -01
+51 // 与RTCP 中的SDES(Source Description) 相关的扩展头
+52 // 通过RTCP 的SDES 传输mid
+53 a=extmap :4 urn:ietf:params:rtp -hdrext:sdes:mid
+54 // 通过RTCP 的SDES 传输rtp -stream -id
+55 a=extmap :5 urn:ietf:params:rtp -hdrext:sdes:rtp -stream -id
+56 // 通过RTCP 的SDES 传输重传时的rtp -stream -id
+57 a=extmap :6 urn:ietf:params:rtp -hdrext:sdes:repaired -rtp -stream -id
+58 // 音频数据传输方向
+59 // sendrecv 既可以接收音频， 又可以发送音频
+60 a=sendrecv
+61 // 记录音频与媒体流的关系
+62 a=msid:3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt 67eb8a85 -f7c0 -4cad -bd62 -41 cae9517041
+63 //RTCP 与RTP 复用传输通道
+64 a=rtcp -mux
+65 //PT=111 代表音频编码器opus/ 采样率48000/ 双通道
+66 a=rtpmap :111 opus /48000/2
+67 // 使用Opus 时， 支持RTCP 中的Transport -CC 反馈报文
+68 a=rtcp -fb:111 Transport -cc
+69 // 使用Opus 时， 每个视频帧的最小间隔为10ms , 使用带内频率
+70 a=fmtp :111 minptime =10; useinbandfec =1
+71 //PT=103 代表音频编码器ISAC/ 采样率16000
+72 a=rtpmap :103 ISAC /16000
+73 //PT=104 代表音频编码器ISAC/ 采样率32000
+74 a=rtpmap :104 ISAC /32000
+75 //PT=9 代表音频编码器G722/ 采样率8000
+76 a=rtpmap :9 G722 /8000
+77 //PT=0 未压缩音频数据PCMU/ 采样率8000
+78 a=rtpmap :0 P C M U/8000
+79 //PT=8 未压缩音频数据PCMA/ 采样率8000
+80 a=rtpmap :8 P C M A/8000
+81 //PT=106 舒适噪声(Comfort Noise , CN)/ 采样率32000
+82 a=rtpmap :106 CN /32000
+83 //PT=106 舒适噪声/ 采样率16000
+84 a=rtpmap :105 CN /16000
+85 //PT=106 舒适噪声/ 采样率8000
+86 a=rtpmap :13 CN /8000
+87 //PT=110 SIP DTMF 电话按键/ 采样率48000
+88 a=rtpmap :110 telephone -event /48000
+89 //PT=112 SIP DTMF 电话按键/ 采样率32000
+90 a=rtpmap :112 telephone -event /32000
+91 //PT=113 SIP DTMF 电话按键/ 采样率16000
+92 a=rtpmap :113 telephone -event /16000
+93 //PT=116 SIP DTMF 电话按键/ 采样率8000
+94 a=rtpmap :126 telephone -event /8000
+95 // 源933825788 的别名
+96 a=ssrc :933825788 cname:Tf3LnJwwJc0lgnxC
+97 // 记录源SSRC 与音频轨和媒体流的关系
+98 a=ssrc :933825788 msid:3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt 67eb8a85 -f7c0 -4cad -bd62 -41 cae9517041
+99 // 记录源SSRC :933825788 属于哪个媒体流
+100 a=ssrc :933825788 mslabel :3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt
+101 // 记录源SSRC :933825788 属于哪个音频轨
+102 a=ssrc :933825788 label :67 eb8a85 -f7c0 -4cad -bd62 -41 cae9517041
+103 // ===============================================
+104 // 视频媒体描述
+105 // ===============================================
+106 // 视频媒体描述
+107 m=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 102 121 127 120 125 107
+108 109 124 119 123 108 // 网络描述, 忽略!WebRTC 不使用该属性
+109 c=IN IP4 0.0.0.0
+110 忽略!WebRTC 不使用该属性
+111 a=rtcp:9 IN IP4 0.0.0.0
+112 // 与音频一样， 用于验证用户的有效性
+113 // 如果音视频复用传输通道， 只用其中一个即可
+114 a=ice -ufrag:r8+X
+115 a=ice -pwd:MdLpm2pegfysJ/VMCCGtZRpF
+116 // 与音频一样， 设置收集Candidate 的方式
+117 a=ice -options:trickle
+118 // 证书指纹， 用于验证DTLS 证书有效性
+119 a=fingerprint:sha -256 53:08:1A:66:24: C7 :45:31:0A:EA:9E:59:97: A9 :15:3A:EC :60:1F:85:85:5B:B8:EC:D4 :77:78:9A:46:09:03:2A
+120 // 用于指定DTLS 用户角色
+121 a=setup:actpass
+122 // media id 1
+123 a=mid:1
+124 // 视频传输时RTP 支持的扩展头
+125 // toffset(TransportTime Offset)
+126 //RTP 包中的timestamp 与实际发送时的偏差
+127 a=extmap :14 urn:ietf:params:rtp -hdrext:toffset
+128 a=extmap :2 http://www.webrtc.org/experiments/rtp -hdrext/abs -send -time
+129 // 视频旋转角度的扩展头
+130 a=extmap :13 urn:3gpp:video -orientation
+131 //Transport -CC 扩展头
+132 a=extmap :3 http://www.ietf.org/id/draft -holmer -rmcat -transport -wide -cc -extensions -01
+133 // 发送端控制接收端渲染视频的延时时间
+134 a=extmap :12 http://www.webrtc.org/experiments/rtp -hdrext/playout -delay
+135 // 指定视频的内容， 它有两种值： 未指定和屏幕共享
+136 a=extmap :11 http://www.webrtc.org/experiments/rtp -hdrext/video -content -type
+137 // 该扩展仅在每个视频帧最后一个包中出现
+138 // 其存放6 个时间戳， 分别为：
+139 //1. 编码开始时间
+140 //2. 编码完成时间
+141 //3. 打包完成时间
+142 //4. 离开pacer 的最后一个包的时间
+143 //5. 预留时间1
+144 //6. 预留时间2
+145 a=extmap :7 http://www.webrtc.org/experiments/rtp -hdrext/video -timing
+146 a=extmap :8 http://www.webrtc.org/experiments/rtp -hdrext/color -space
+147 // 携带mid 的扩展头
+148 a=extmap :4 urn:ietf:params:rtp -hdrext:sdes:mid
+149 // 携带rtp -stream -id 的扩展头
+150 a=extmap :5 urn:ietf:params:rtp -hdrext:sdes:rtp -stream -id
+151 // 重传时携带的rtp -stream -id 的扩展头
+152 a=extmap :6 urn:ietf:params:rtp -hdrext:sdes:repaired -rtp -stream -id
+153 // 视频数据传输方向
+154 // sendrecv ， 既可以发送， 又可以接收视频数据
+155 a=sendrecv
+156 // media stream id
+157 a=msid:3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt f5d231d9 -f0f7 -4cd2 -b2bc -424 f37dfd003
+158 //RTCP 与RTP 复用端口
+159 a=rtcp -mux
+160 // 减少RTCP 尺寸
+161 a=rtcp -rsize
+162 //PT=96 代表音频编码器VP8/ 采样率为90000
+163 a=rtpmap :96 VP8 /90000
+164 //PT=96 支持RTCP 协议中的Goog -REMB 反馈
+165 a=rtcp -fb:96 goog -remb
+166 //PT=96 支持RTCP 协议中的Transport -CC 反馈
+167 a=rtcp -fb:96 transport -cc
+168 //PT=96 支持RTCP 协议中的fir 反馈
+169 a=rtcp -fb:96 ccm fir
+170 //PT=96 支持RTCP 中的nack 反馈
+171 a=rtcp -fb:96 nack
+172 //PT=96 支持RTCP 中的pli 反馈
+173 a=rtcp -fb:96 nack pli
+174 //PT=97 代表重传数据/ 采样率为90000
+175 a=rtpmap :97 rtx /90000
+176 //PT=97 与96 是绑定关系， 说明97 是96 的重传数据
+177 a=fmtp :97 apt =96
+178 //PT=98 代表音频编码器VP9/ 采样率为90000
+179 a=rtpmap :98 VP9 /90000
+180 //PT=98 支持RTCP 中的Goog -REMB 反馈
+181 a=rtcp -fb:98 goog -remb
+182 //PT=98 支持RTCP 中的Transport -CC 反馈
+183 a=rtcp -fb:98 transport -cc
+184 //PT=98 支持RTCP 中的fir 反馈
+185 a=rtcp -fb:98 ccm fir
+186 //PT=98 支持RTCP 中的nack 反馈
+187 a=rtcp -fb:98 nack
+188 //PT=98 支持RTCP 中的pli 反馈
+189 a=rtcp -fb:98 nack pli
+190 // 使用VP9 时， 视频帧的profile id 为0
+191 //VP9 一共有4 种profile 1,2,3,4
+192 //0 表示支持8bit 位深
+193 // 和YUV4 :2:0 格式
+194 a=fmtp :98 profile -id=0
+195 //PT=99 代表重传数据/ 采样率90000
+196 a=rtpmap :99 rtx /90000
+197 //PT=99 与98 是绑定关系， 因此99 是98 的重传数据
+198 a=fmtp :99 apt =98
+199 //PT=100 代表音频编码器VP9/ 采样率90000
+200 a=rtpmap :100 VP9 /90000
+201 //PT=100 支持RTCP 中的Goog -REMB 反馈
+202 a=rtcp -fb:100 goog -remb
+203 //PT=100 支持RTCP 中的Transport -CC 反馈
+204 a=rtcp -fb:100 transport -cc
+205 //PT=100 支持RTCP 中的fir 反馈
+206 a=rtcp -fb:100 ccm fir
+207 //PT=100 支持RTCP 中的nack 反馈
+208 a=rtcp -fb:100 nack
+209 //PT=100 支持RTCP 中的pli 反馈
+210 a=rtcp -fb:100 nack pli
+211 // 使用VP9 时， 视频帧的profile id 为2
+212 //VP9 一共有4 种profile 1,2,3,4
+213 //2 表示支持10bit 、12bit 位深
+214 // 和YUV4 :2:0 格式
+215 a=fmtp :100 profile -id=2
+216 //PT=101 代表重传数据/ 采样率为90000
+217 a=rtpmap :101 rtx /90000
+218 //PT=101 与100 是绑定关系， 因此101 是100 的重传数据
+219 a=fmtp :101 apt =100
+220 //PT=102 代表音频编码器H264/ 采样率为90000
+221 a=rtpmap :102 H264 /90000
+222 //PT=102 支持RTCP 中的Goog -REMB 反馈
+223 a=rtcp -fb:102 goog -remb
+224 //PT=102 支持RTCP 中的Transport -CC 反馈
+225 a=rtcp -fb:102 transport -cc
+226 //PT=102 支持RTCP 中的fir 反馈
+227 a=rtcp -fb:102 ccm fir
+228 //PT=102 支持RTCP 中的nack 反馈
+229 a=rtcp -fb:102 nack
+230 //PT=102 支持RTCP 中的pli 反馈
+231 a=rtcp -fb:102 nack pli
+232 a=fmtp :102 level -asymmetry -allowed =1; packetization -mode =1; profile -level -id =42001f
+233 //PT=121 代表重传数据/ 采样率为90000
+234 a=rtpmap :121 rtx /90000
+235 //PT=121 与102 是绑定关系， 因此121 是102 的重传数据
+236 a=fmtp :121 apt =102
+237 //PT=127 代表音频编码器H264/ 采样率为90000
+238 a=rtpmap :127 H264 /90000
+239 //PT=127 支持RTCP 中的Goog -REMB 反馈
+240 a=rtcp -fb:127 goog -remb
+241 //PT=127 支持RTCP 中的Transport -CC 反馈
+242 a=rtcp -fb:127 transport -cc
+243 //PT=127 支持RTCP 中的fir 反馈
+244 a=rtcp -fb:127 ccm fir
+245 //PT=127 支持RTCP 中的nack 反馈
+246 a=rtcp -fb:127 nack
+247 //PT=127 支持RTCP 中的pli 反馈
+248 a=rtcp -fb:127 nack pli
+249 a=fmtp :127 level -asymmetry -allowed =1; packetization -mode =0; profile -level -id =42001f
+250 //PT=120 代表重传数据/ 采样率为90000
+251 a=rtpmap :120 rtx /90000
+252 //PT=127 与120 是绑定关系， 因此127 是120 的重传数据
+253 a=fmtp :120 apt =127
+254 //PT=125 代表音频编码器H264/ 采样率为90000
+255 a=rtpmap :125 H264 /90000
+256 //PT=125 支持RTCP 中的Goog -REMB 反馈
+257 a=rtcp -fb:125 goog -remb
+258 //PT=125 支持RTCP 中的Transport -CC 反馈
+259 a=rtcp -fb:125 transport -cc
+260 //PT=127 支持RTCP 中的fir 反馈
+261 a=rtcp -fb:125 ccm fir
+262 //PT=127 支持RTCP 中的nack 反馈
+263 a=rtcp -fb:125 nack
+264 //PT=127 支持RTCP 中的pli 反馈
+265 a=rtcp -fb:125 nack pli
+266 a=fmtp :125 level -asymmetry -allowed =1; packetization -mode =1; profile -level -id=42 e01f
+267 //PT=107 代表重传数据/ 采样率为90000
+268 a=rtpmap :107 rtx /90000
+269 //PT=107 与125 是绑定关系， 因此177 是125 的重传数据
+270 a=fmtp :107 apt =125
+271 //PT=108 代表音频编码器H264/ 采样率为90000
+272 a=rtpmap :108 H264 /90000
+273 //PT=108 支持RTCP 中的Goog -REMB 反馈
+274 a=rtcp -fb:108 goog -remb
+275 //PT=108 支持RTCP 中的Transport -CC 反馈
+276 a=rtcp -fb:108 transport -cc
+277 //PT=108 支持RTCP 中的fir 反馈
+278 a=rtcp -fb:108 ccm fir
+279 //PT=108 支持RTCP 中的nack 反馈
+280 a=rtcp -fb:108 nack
+281 //PT=108 支持RTCP 中的pli 反馈
+282 a=rtcp -fb:108 nack pli
+283 a=fmtp :108 level -asymmetry -allowed =1; packetization -mode =0; profile -level -id=42 e01f
+284 //PT=109 代表重传数据/ 采样率为90000
+285 a=rtpmap :109 rtx /90000
+286 //PT=109 与108 是绑定关系， 因此109 是108 的重传数据
+287 a=fmtp :109 apt =108
+288 //PT=124 代表视频使用red fec 技术/ 采样率为90000
+289 a=rtpmap :124 red /90000
+290 //PT=119 代表重传数据/ 采样率为90000
+291 a=rtpmap :119 rtx /90000
+292 //PT =1119 与124 是绑定关系， 因此119 是124 的重传数据
+293 a=fmtp :119 apt =124
+294 //PT=123 代表视频使用ulp fec 技术/ 采样率为90000
+295 a=rtpmap :123 ulpfec /90000
+296 //ssrc -group 表示几个源之间的关系
+297 // 其格式为a=ssrc -group:<semantics > <ssrc -id > … 参考RFC5576
+298 //FID(Flow ID), 表示这几个源都是数据流
+299 // 其中， 1101026881 是正常的视频流
+300 // 而后面的ssrc =35931176 是前面的ssrc 的重传流
+301 a=ssrc -group:FID 1101026881 35931176
+302 // 源1101026881 的别名为Tf3LnJwwJc0lgnxC
+303 a=ssrc :1101026881 cname:Tf3LnJwwJc0lgnxC
+304 // 下面的描述行指明了源1101026881 与媒体流ID(Media Stream ID) 和轨的关系
+305 // 在一个媒体流中可以有多路轨(track), 每个轨对应一个ssrc
+306 a=ssrc :1101026881 msid:3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt f5d231d9 -f0f7 -4cd2 -b2bc -424 f37dfd003
+307 // 下面描述行指明了源1101026881 所属的媒体流的label(Media Stream lable)
+308 a=ssrc :1101026881 mslabel :3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt
+309 // 下面描述行指明了源1101026881 对应的媒体轨， 同时它也是视频设备的label
+310 a=ssrc :1101026881 label:f5d231d9 -f0f7 -4cd2 -b2bc -424 f37dfd003
+311 // 源35931176 的别名为Tf3LnJwwJc0lgnxC
+312 a=ssrc :35931176 cname:Tf3LnJwwJc0lgnxC
+313 // 下面的信息与源1101026881 的信息相同， 不做解释
+314 a=ssrc :35931176 msid:3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt f5d231d9 -f0f7 -4cd2 -b2bc -424 f37dfd003
+315 a=ssrc :35931176 mslabel :3 eofXQZ24BqbQPRkcL49QddC5s84gauyOuUt
+316 a=ssrc :35931176 label:f5d231d9 -f0f7 -4cd2 -b2bc -424 f37dfd003
+```
+
+
+
+### 作为subscriber时的sdp
+
+#### 服务器发送的offer
+
+```
+v=0
+o=- 1703506616744788 1 IN IP4 47.236.111.105
+s=VideoRoom 1234
+t=0 0
+a=group:BUNDLE 0 1
+a=ice-options:trickle
+a=fingerprint:sha-256 1A:F5:79:57:C3:15:58:D8:DC:88:9A:42:14:D4:73:F9:8A:35:68:55:A9:2E:07:15:AC:F4:C2:58:DB:54:05:6D
+a=extmap-allow-mixed
+a=msid-semantic: WMS *
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 47.236.111.105
+a=sendonly
+a=mid:0
+a=rtcp-mux
+a=ice-ufrag:9IfR
+a=ice-pwd:bpObUGgAUG79oZG4AjjEnM
+a=ice-options:trickle
+a=setup:actpass
+a=rtpmap:111 opus/48000/2
+a=rtcp-fb:111 transport-cc
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=fmtp:111 useinbandfec=1
+a=msid:janus janus0
+a=ssrc:898065595 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 38459 typ host
+a=candidate:2 1 udp 1679819007 47.236.111.105 38459 typ srflx raddr 172.17.10.191 rport 38459
+a=end-of-candidates
+m=video 9 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 47.236.111.105
+a=sendonly
+a=mid:1
+a=rtcp-mux
+a=ice-ufrag:9IfR
+a=ice-pwd:bpObUGgAUG79oZG4AjjEnM
+a=ice-options:trickle
+a=setup:actpass
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:12 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:13 urn:3gpp:video-orientation
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+a=ssrc-group:FID 3324457319 3482284888
+a=msid:janus janus1
+a=ssrc:3324457319 cname:janus
+a=ssrc:3482284888 cname:janus
+a=candidate:1 1 udp 2015363327 172.17.10.191 38459 typ host
+a=candidate:2 1 udp 1679819007 47.236.111.105 38459 typ srflx raddr 172.17.10.191 rport 38459
+a=end-of-candidates
+```
+
+#### 客户端回复的answer
+
+```
+v=0
+o=- 1851555292525608337 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=extmap-allow-mixed
+a=msid-semantic: WMS
+m=audio 9 UDP/TLS/RTP/SAVPF 111
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:u7BL
+a=ice-pwd:oaVCBCirHrgOLBxwmNSOWFhv
+a=ice-options:trickle
+a=fingerprint:sha-256 B3:B9:FC:E7:19:72:0E:16:35:4D:11:70:CF:E1:1A:8C:F0:AB:6D:2E:64:8E:95:12:B0:12:5B:C5:EE:1B:D3:40
+a=setup:active
+a=mid:0
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=recvonly
+a=rtcp-mux
+a=rtpmap:111 opus/48000/2
+a=rtcp-fb:111 transport-cc
+a=fmtp:111 minptime=10;useinbandfec=1
+m=video 9 UDP/TLS/RTP/SAVPF 96 97
+c=IN IP4 0.0.0.0
+a=rtcp:9 IN IP4 0.0.0.0
+a=ice-ufrag:u7BL
+a=ice-pwd:oaVCBCirHrgOLBxwmNSOWFhv
+a=ice-options:trickle
+a=fingerprint:sha-256 B3:B9:FC:E7:19:72:0E:16:35:4D:11:70:CF:E1:1A:8C:F0:AB:6D:2E:64:8E:95:12:B0:12:5B:C5:EE:1B:D3:40
+a=setup:active
+a=mid:1
+a=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=extmap:13 urn:3gpp:video-orientation
+a=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
+a=extmap:12 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay
+a=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid
+a=recvonly
+a=rtcp-mux
+a=rtpmap:96 VP8/90000
+a=rtcp-fb:96 goog-remb
+a=rtcp-fb:96 transport-cc
+a=rtcp-fb:96 ccm fir
+a=rtcp-fb:96 nack
+a=rtcp-fb:96 nack pli
+a=rtpmap:97 rtx/90000
+a=fmtp:97 apt=96
+```
