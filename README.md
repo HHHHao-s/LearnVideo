@@ -1186,3 +1186,15 @@ a=rtcp-fb:96 nack pli
 a=rtpmap:97 rtx/90000
 a=fmtp:97 apt=96
 ```
+
+### peerConnection连接流程
+
+#### 1. 创建peerConnection
+
+#### 2. 交换sdp
+
+#### 3. 通过ice连接
+
+#### 4. dtls交换密钥
+
+#### 5. 通过srtp传输媒体数据
