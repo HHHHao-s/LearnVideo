@@ -245,6 +245,30 @@ av_samples_fill_arrays(frame->data, frame->linesize, in_tmp_buf, frame->ch_layou
 I find a problem in the example file mux.c, I need some help about modifing the codec of a muxer
 
 ```c
+// 直接赋值是不可以的，要转成完整的FFOutputFormat再进行修改
+
+typedef struct FFOutputFormat {
+    AVOutputFormat p;
+    int priv_data_size;
+    int flags_internal;
+    int (*write_header)(AVFormatContext *);
+    int (*write_packet)(AVFormatContext *, AVPacket *pkt);
+    int (*write_trailer)(AVFormatContext *);
+    int (*interleave_packet)(AVFormatContext *s, AVPacket *pkt,
+                            int flush, int has_packet);
+    int (*query_codec)(enum AVCodecID id, int std_compliance);
+    void (*get_output_timestamp)(AVFormatContext *s, int stream,
+                                int64_t *dts, int64_t *wall);
+    int (*control_message)(AVFormatContext *s, int type,
+                        void *data, size_t data_size);
+    int (*write_uncoded_frame)(AVFormatContext *, int stream_index,
+                            struct AVFrame **frame, unsigned flags);
+    int (*get_device_list)(AVFormatContext *s, struct AVDeviceInfoList *device_list);
+    int (*init)(AVFormatContext *);
+    void (*deinit)(AVFormatContext *);
+    int (*check_bitstream)(AVFormatContext *s, AVStream *st,
+                        const AVPacket *pkt);
+} FFOutputFormat;
 // The filename is xxx.flv
 // The default codec for flv is AV_CODEC_ID_ADPCM_SWF and AV_CODEC_ID_FLV1
 // If I want to modify the codec I need to copy the entire value of return pointer of av_guess_format() like this, since it returns a const pointer
@@ -264,6 +288,13 @@ ff_flv_format.p.video_codec = AV_CODEC_ID_H264;
 avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
 // what should I do if I want to modify the codec?
 ```
+
+### Decoder
+
+对于视频解码器来说，解码之前好像无法得知视频的format
+
+可以通过`avformat_find_stream_info`来查找视频的信息，这个函数会读取视频的一部分数据，然后解析出视频的format
+
 
 
 ### 合成MP4
