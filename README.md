@@ -89,7 +89,7 @@ void av_bsf_free(AVBSFContext **ctx);
 
 [H264提取YUV420P](https://blog.csdn.net/asdasfdgdhh/article/details/109777820)
 
-在[parse_yuv420p.cpp](src/parse_yuv.cpp)中
+在[parse_yuv420p.cpp](src/parse_yuv420p.cpp)中
 
 播放: `ffplay -pixel_format yuv420p -video_size 1280x720  -i test.yuv`
 
@@ -97,7 +97,7 @@ void av_bsf_free(AVBSFContext **ctx);
 
 [AVIO](https://zhuanlan.zhihu.com/p/501294281)
 
-在[07-09-avio.cpp](src/07-09-avio.cpp)中
+在[07-09-avio.c](src/07-09-avio.c)中
 
 ```c
 AVIOContext *avio_alloc_context(
@@ -299,7 +299,7 @@ avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
 
 ### 合成MP4
 
-[mux_mp4](src/mux_mp4.cpp)
+[mux.c](src/mux.c)
 
 ## 二、 SDL
 
