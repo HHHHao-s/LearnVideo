@@ -615,7 +615,6 @@ int main(int argc, char **argv)
     av_flv_format.audio_codec = AV_CODEC_ID_AAC;
     av_flv_format.video_codec = AV_CODEC_ID_H264;
     // what should I do if I want to modify the codec?
-    avformat_alloc_output_context2(&oc,&ff_flv_format, NULL, filename);
 
 
     // /* allocate the output media context */

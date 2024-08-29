@@ -389,6 +389,10 @@ DAFCF       Sample Duration:                  512 (0x00000200)
 
 [TS 文件格式](https://blog.csdn.net/andylao62/article/details/120019483)
 
+### RTMP协议
+
+[RTMP协议](https://zhuanlan.zhihu.com/p/468248646)
+
 ## 五、 SRS
 
 ### 播放HLS
@@ -1220,7 +1224,7 @@ a=fmtp:97 apt=96
 
 ### peerConnection连接流程
 
-#### 1. 创建peerConnection
+#### 1. 创建peerConnection，获取candidate
 
 #### 2. 交换sdp
 
@@ -1229,3 +1233,64 @@ a=fmtp:97 apt=96
 #### 4. dtls交换密钥
 
 #### 5. 通过srtp传输媒体数据
+
+
+
+
+
+
+### ICE 连接流程
+
+ICE（Interactive Connectivity Establishment）是一个框架，用于在对等方之间建立连接，即使它们位于 NAT（Network Address Translation）或防火墙之后。以下是 ICE 连接流程的详细步骤：
+
+1. **Gathering Candidates（收集候选者）**：
+   - 每个对等方（peer）收集它们可以用于连接的候选地址（candidates）。这些候选地址可以是主机地址（Host Candidates）、反射地址（Server Reflexive Candidates，通过 STUN 服务器获取）和中继地址（Relay Candidates，通过 TURN 服务器获取）。
+
+2. **Exchanging Candidates（交换候选者）**：
+   - 对等方通过信令通道（如 SDP）交换它们收集到的候选地址。
+
+3. **Connectivity Checks（连接性检查）**：
+   - 对等方使用 STUN 消息在候选地址之间进行连接性检查，以确定哪些候选地址可以成功建立连接。这些检查是通过发送和接收 STUN Binding 请求和响应来完成的。
+
+4. **Pairing Candidates（配对候选者）**：
+   - 对等方将它们的候选地址配对，形成候选对（candidate pairs）。每个候选对由一个本地候选地址和一个远程候选地址组成。
+
+5. **Prioritizing Candidates（优先级排序）**：
+   - 对等方根据候选地址的类型和其他因素对候选对进行优先级排序。通常，主机候选地址的优先级最高，其次是反射地址，最后是中继地址。
+
+6. **Nomination（提名）**：
+   - 一旦找到一个成功的候选对，对等方将其提名为最终的连接地址。提名过程可以是控制模式（Controlled Mode）或控制模式（Controlling Mode）的一部分。
+
+7. **Establishing Connection（建立连接）**：
+   - 一旦提名的候选对成功建立连接，对等方将使用该连接进行数据传输。
+
+
+### NAT类型
+
+NAT（Network Address Translation）类型描述了网络设备（如路由器）如何处理出站和入站的网络流量。不同的 NAT 类型会影响对等连接的建立，尤其是在 P2P（Peer-to-Peer）通信中。以下是常见的 NAT 类型：
+
+#### 1. Full Cone NAT（全锥形 NAT）
+- **描述**：所有来自同一内部 IP 地址和端口的请求都映射到相同的外部 IP 地址和端口。任何外部主机都可以通过发送到该映射的外部地址和端口来联系内部主机。
+- **优点**：最容易穿透，连接成功率高。
+- **缺点**：安全性较低，因为任何外部主机都可以访问内部主机。
+
+#### 2. Restricted Cone NAT（受限锥形 NAT）
+- **描述**：所有来自同一内部 IP 地址和端口的请求都映射到相同的外部 IP 地址和端口。外部主机只能在内部主机先前发送过数据包的情况下，通过该映射的外部地址和端口联系内部主机。
+- **优点**：比全锥形 NAT 更安全。
+- **缺点**：连接成功率较高，但不如全锥形 NAT。
+
+#### 3. Port Restricted Cone NAT（端口受限锥形 NAT）
+- **描述**：类似于受限锥形 NAT，但进一步限制为外部主机必须使用特定的端口才能联系内部主机。
+- **优点**：安全性更高。
+- **缺点**：连接成功率较低，尤其是在 P2P 通信中。
+
+#### 4. Symmetric NAT（对称 NAT）
+- **描述**：每个来自同一内部 IP 地址和端口到特定目的地 IP 地址和端口的请求都映射到一个唯一的外部 IP 地址和端口。如果同一内部主机使用不同的目的地地址或端口，则会使用不同的映射。
+- **优点**：安全性最高。
+- **缺点**：最难穿透，连接成功率最低，通常需要使用中继服务器（如 TURN）来建立连接。
+
+#### 示例图示
+
+![nat](/static/nat.png)
+
+![nat2](/static/nat2.png)
